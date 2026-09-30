@@ -1,0 +1,158 @@
+/* Classic airport information board: flat, square, black-and-yellow signage. */
+.root {
+    -fx-font-family: "Arial", "Helvetica", sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: -bg;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.label { -fx-text-fill: -text; }
+.app-root { -fx-background-color: -bg; }
+
+/* ---------- header sign ---------- */
+.header-bar { -fx-background-color: -sign; -fx-border-color: -sign-text; -fx-border-width: 0 0 4 0; }
+.brand-title { -fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: -sign-text; }
+.brand-sub { -fx-font-size: 10px; -fx-text-fill: white; -fx-font-weight: bold; }
+.brand-icon { -fx-icon-color: -sign-text; }
+.clock { -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: -sign-text; }
+.clock-date { -fx-font-size: 10px; -fx-text-fill: white; -fx-font-weight: bold; }
+
+/* ---------- classic (old Java style) buttons ---------- */
+.button, .toggle-button, .nav-tab, .action-button, .chip-button {
+    -fx-background-color: #7f7f7f, linear-gradient(to bottom, #fdfdfd 0%, #dcdcdc 100%);
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 3, 2;
+    -fx-text-fill: black;
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+    -fx-padding: 5 14 5 12;
+    -fx-graphic-text-gap: 6;
+    -fx-cursor: default;
+    -fx-effect: null;
+}
+.button:hover, .toggle-button:hover { -fx-background-color: #5a7fb5, linear-gradient(to bottom, #ffffff 0%, #e6eefa 100%); }
+.button:pressed, .toggle-button:pressed, .toggle-button:selected {
+    -fx-background-color: #6a6a6a, linear-gradient(to bottom, #c4c4c4 0%, #e2e2e2 100%);
+}
+.button .ikonli-font-icon, .toggle-button .ikonli-font-icon { -fx-icon-color: #222222; }
+.nav-tab:selected { -fx-font-weight: bold; }
+.action-button.primary { -fx-font-weight: bold; }
+
+/* ---------- departures board ---------- */
+.board, .lookup-scroll, .lookup-scroll > .viewport, .lookup-scroll > .viewport > StackPane { -fx-background-color: -bg; }
+.scroll-pane { -fx-background-insets: 0; -fx-padding: 0; }
+.board-title { -fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.board-sub { -fx-font-size: 12px; -fx-text-fill: -muted; }
+
+.fids-table { -fx-background-color: -panel; -fx-border-color: -sign; -fx-border-width: 2; -fx-padding: 0; -fx-table-cell-border-color: transparent; -fx-background-insets: 0; }
+.fids-table .column-header-background { -fx-background-color: -sign; }
+.fids-table .column-header, .fids-table .filler { -fx-background-color: -sign; -fx-size: 36; -fx-border-color: transparent; }
+.fids-table .column-header .label { -fx-text-fill: -sign-text; -fx-font-size: 12px; -fx-font-weight: bold; -fx-alignment: CENTER-LEFT; }
+.fids-table .table-row-cell { -fx-background-color: -panel; -fx-border-color: #d3d6da; -fx-border-width: 0 0 1 0; -fx-cell-size: 44; }
+.fids-table .table-row-cell:odd { -fx-background-color: -row-alt; }
+.fids-table .table-row-cell:hover { -fx-background-color: -row-hover; }
+.fids-table .table-row-cell:selected, .fids-table .table-row-cell:odd:selected { -fx-background-color: -panel; }
+.fids-table .table-row-cell:empty { -fx-background-color: -panel; -fx-border-width: 0; }
+.fids-table .table-row-cell.expanded-row { -fx-background-color: -row-hover; -fx-border-color: -sign; -fx-border-width: 0 0 1 4; }
+.fids-table .table-row-cell.pinned-row { -fx-background-color: -pinned; -fx-border-color: -sign; -fx-border-width: 0 0 1 0; }
+.fids-table .table-row-cell.inactive-row .label { -fx-opacity: 0.5; }
+.fids-table .table-cell { -fx-alignment: CENTER-LEFT; -fx-padding: 0 0 0 10; -fx-background-color: transparent; -fx-text-fill: -text; }
+.fids-table .scroll-bar .thumb { -fx-background-color: #9aa0a6; -fx-background-radius: 0; }
+.fids-table .scroll-bar .track { -fx-background-color: #e4e4e4; }
+.fids-table .scroll-bar .increment-button, .fids-table .scroll-bar .decrement-button { -fx-background-color: #e4e4e4; -fx-padding: 2; }
+
+.sort-header { -fx-cursor: hand; -fx-padding: 4 6 4 0; }
+.sort-title { -fx-text-fill: -sign-text; -fx-font-size: 12px; -fx-font-weight: bold; }
+.sort-arrow { -fx-icon-color: white; }
+.sort-active .sort-title { -fx-text-fill: white; -fx-underline: true; }
+
+.cell-flight { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.cell-text { -fx-font-size: 13px; -fx-text-fill: -text; }
+.cell-dest { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.cell-code { -fx-font-size: 11px; -fx-text-fill: -muted; -fx-font-weight: bold; }
+.cell-time { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.cell-est { -fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: -bad; }
+/* gates look like the black-and-yellow gate signs */
+.cell-gate { -fx-background-color: -sign; -fx-text-fill: -sign-text; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 2 10 2 10; -fx-min-width: 44; -fx-alignment: CENTER; }
+
+.pin-hit { -fx-min-width: 30; -fx-min-height: 30; }
+.pin-off { -fx-icon-color: #9aa0a6; }
+.pin-on { -fx-icon-color: -bad; }
+
+.airline-chip { -fx-min-width: 34; -fx-min-height: 22; -fx-max-height: 22; -fx-background-radius: 2; }
+.airline-chip-text { -fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: bold; }
+
+/* ---------- status badges: flat coloured plates ---------- */
+.badge { -fx-padding: 3 10 3 8; -fx-background-radius: 2; }
+.badge-text { -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: white; }
+.badge-icon { -fx-icon-color: white; }
+.badge-ok { -fx-background-color: -ok; }
+.badge-warn { -fx-background-color: -warn; }
+.badge-warn .badge-text { -fx-text-fill: black; }
+.badge-warn .badge-icon { -fx-icon-color: black; }
+.badge-bad { -fx-background-color: -bad; }
+.badge-muted { -fx-background-color: #6f767d; }
+
+/* ---------- detail drawer ---------- */
+.detail-wrap { -fx-background-color: -panel; }
+.detail-content { -fx-padding: 0 20 0 20; -fx-background-color: #fffbe0; -fx-border-color: -sign; -fx-border-width: 0 2 2 2; }
+.detail-title { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.detail-caption { -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: -muted; }
+.detail-value { -fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: -text; }
+
+/* ---------- lookup ---------- */
+.search-bar { -fx-background-color: white; -fx-border-color: -sign; -fx-border-width: 2; -fx-padding: 6 8 6 12; }
+.search-icon { -fx-icon-color: -muted; }
+.search-field { -fx-background-color: transparent; -fx-text-fill: -text; -fx-prompt-text-fill: #8a9097; -fx-font-size: 16px; -fx-padding: 4; }
+.search-field:focused { -fx-background-color: transparent; -fx-background-insets: 0; }
+.hint-caption { -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: -muted; }
+.chip-button { -fx-font-size: 11px; -fx-padding: 2 8 2 8; }
+
+.your-flight { -fx-background-color: white; -fx-border-color: -sign; -fx-border-width: 3; -fx-padding: 22 26 22 26; }
+.hero-number { -fx-font-size: 46px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.hero-dest { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.hero-gate { -fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.divider { -fx-background-color: #c9ccd0; -fx-min-height: 1; -fx-max-height: 1; }
+.flap { -fx-background-color: linear-gradient(to bottom, #2a2a2a 0%, #111111 49%, #000000 51%, #1c1c1c 100%); -fx-background-radius: 3; -fx-min-width: 42; -fx-min-height: 60; -fx-max-width: 42; -fx-max-height: 60; }
+.flap-text { -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: -sign-text; }
+.flap-seam { -fx-stroke: black; -fx-stroke-width: 2; }
+.flap-colon { -fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.empty-card { -fx-background-color: white; -fx-border-color: -border; -fx-border-width: 1; -fx-padding: 40; }
+.empty-icon { -fx-icon-color: -muted; }
+.empty-title { -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: -text; }
+
+/* ---------- wayfinding ---------- */
+.wayfinder, .map-holder { -fx-background-color: -bg; }
+.side-panel { -fx-background-color: white; -fx-border-color: -sign; -fx-border-width: 0 0 0 2; }
+.mini-card { -fx-background-color: -panel-2; -fx-border-color: -border; -fx-padding: 12; }
+.step-icon { -fx-icon-color: -route; }
+.flight-picker { -fx-background-color: #7f7f7f, linear-gradient(to bottom, #fdfdfd, #dcdcdc); -fx-background-insets: 0, 1; -fx-background-radius: 3, 2; -fx-pref-height: 30; }
+.flight-picker .list-cell { -fx-text-fill: black; -fx-background-color: transparent; }
+.combo-box-popup > .list-view { -fx-background-color: white; -fx-border-color: #7f7f7f; }
+.combo-box-popup .list-cell { -fx-background-color: white; -fx-text-fill: black; }
+.combo-box-popup .list-cell:hover { -fx-background-color: -row-hover; }
+
+.map-bg { -fx-fill: #eceff1; }
+.map-corridor { -fx-fill: white; -fx-stroke: #8a9097; }
+.map-plaza { -fx-fill: #cfd8dc; -fx-stroke: #8a9097; }
+.map-hall { -fx-fill: #cfd8dc; -fx-stroke: #8a9097; }
+.map-facility { -fx-fill: #dfe3e6; -fx-stroke: #8a9097; }
+.map-gate { -fx-fill: white; -fx-stroke: -sign; -fx-stroke-width: 1.5; }
+.map-gate-target { -fx-fill: -sign-text; -fx-stroke: -sign; -fx-stroke-width: 3; }
+.map-stub { -fx-stroke: #8a9097; -fx-stroke-width: 3; }
+.map-gate-label { -fx-fill: -sign; -fx-font-size: 13px; -fx-font-weight: bold; }
+.map-label { -fx-fill: -text; -fx-font-size: 15px; -fx-font-weight: bold; }
+.map-label-sm { -fx-fill: #4a5058; -fx-font-size: 11px; -fx-font-weight: bold; }
+.map-label-xs { -fx-fill: #4a5058; -fx-font-size: 10px; }
+.map-terminal { -fx-fill: -sign; -fx-font-size: 12px; -fx-font-weight: bold; }
+.map-route { -fx-stroke: -route; -fx-stroke-width: 6; -fx-stroke-line-cap: round; -fx-stroke-line-join: round; -fx-fill: transparent; }
+.map-walker { -fx-fill: white; -fx-stroke: -route; -fx-stroke-width: 3; }
+.map-you { -fx-fill: #d32f2f; -fx-stroke: white; -fx-stroke-width: 3; }
+.map-you-pulse { -fx-fill: #d32f2f; }
+.map-you-label { -fx-fill: #d32f2f; -fx-font-size: 13px; -fx-font-weight: bold; }
+
+/* ---------- announcement banner ---------- */
+.banner { -fx-background-color: -sign-text; -fx-border-color: -sign; -fx-border-width: 3; -fx-padding: 10 24 10 16; }
+.banner-title { -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: -sign; }
+.banner-message { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -sign; }
+.banner-icon { -fx-icon-color: -sign; }

@@ -1,0 +1,18 @@
+/* Airport signage palette: black + signal yellow on pale grey, flat and high contrast. */
+.root {
+    -bg: #e4e7ea;
+    -panel: #ffffff;
+    -panel-2: #f0f0f0;
+    -border: #b9bec4;
+    -text: #111111;
+    -muted: #5d656e;
+    -sign: #111111;            /* black sign background */
+    -sign-text: #ffd200;       /* signal yellow */
+    -ok: #1b8a3a;
+    -warn: #f5a300;
+    -bad: #c62828;
+    -route: #0057b8;
+    -row-alt: #f3f4f5;
+    -row-hover: #fff6c2;
+    -pinned: #fff0a0;
+}
