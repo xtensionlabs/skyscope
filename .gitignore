@@ -38,3 +38,6 @@ desktop.ini
 *.log
 *.tmp
 hs_err_pid*
+
+# Runtime data written by the app (saved flights/bookings)
+/data/

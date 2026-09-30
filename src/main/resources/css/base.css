@@ -156,3 +156,41 @@
 .banner-title { -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: -sign; }
 .banner-message { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -sign; }
 .banner-icon { -fx-icon-color: -sign; }
+
+/* ================= Additions: staff panel, boarding pass, live indicator, selection, accessibility ================= */
+.fids-table .table-row-cell:selected, .fids-table .table-row-cell:odd:selected { -fx-background-color: -row-hover; -fx-border-color: -sign; -fx-border-width: 0 0 1 4; }
+.fids-table:focused .table-row-cell:selected { -fx-background-color: -pinned; }
+.live-dot { -fx-fill: -ok; }
+.live-text { -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: -ok; }
+.admin-card { -fx-background-color: white; -fx-border-color: -sign; -fx-border-width: 2; -fx-padding: 14; }
+.form-field { -fx-background-color: white; -fx-border-color: #7f7f7f; -fx-border-width: 1; -fx-background-radius: 0; -fx-padding: 4 6 4 6; -fx-text-fill: -text; }
+.form-field:focused { -fx-border-color: -route; }
+.audit-list { -fx-background-color: white; -fx-border-color: #7f7f7f; -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 11px; }
+.audit-list .list-cell { -fx-background-color: white; -fx-text-fill: -text; }
+.audit-list .list-cell:odd { -fx-background-color: -row-alt; }
+.notice { -fx-text-fill: -ok; -fx-font-weight: bold; -fx-font-size: 13px; }
+.notice-error { -fx-text-fill: -bad; -fx-font-weight: bold; -fx-font-size: 13px; }
+.boarding-pass { -fx-background-color: #fffbe0; -fx-border-color: -sign; -fx-border-width: 2; -fx-border-style: segments(6, 4); -fx-padding: 14 18 14 18; }
+.pass-title { -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: -muted; }
+.pass-name { -fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.barcode-bar { -fx-fill: black; }
+.tooltip { -fx-background-color: -sign; -fx-text-fill: white; -fx-font-size: 12px; -fx-background-radius: 2; }
+
+/* High contrast: pure black/white/yellow, thick borders */
+.root.high-contrast { -bg: #ffffff; -panel: #ffffff; -panel-2: #ffffff; -border: #000000; -text: #000000; -muted: #000000; -sign: #000000; -sign-text: #ffff00; -ok: #005a00; -warn: #ffd400; -bad: #a80000; -route: #0000cc; -row-alt: #ffffff; -row-hover: #ffff99; -pinned: #ffff66; }
+.root.high-contrast .fids-table .table-row-cell { -fx-border-color: #000000; }
+.root.high-contrast .button, .root.high-contrast .toggle-button { -fx-background-color: #000000, #ffffff; }
+.root.high-contrast .map-corridor, .root.high-contrast .map-plaza, .root.high-contrast .map-hall { -fx-stroke: black; -fx-stroke-width: 2; }
+
+/* Larger text */
+.root.large-text { -fx-font-size: 16px; }
+.root.large-text .cell-flight, .root.large-text .cell-dest { -fx-font-size: 18px; }
+.root.large-text .cell-text { -fx-font-size: 16px; }
+.root.large-text .cell-time, .root.large-text .cell-gate { -fx-font-size: 21px; }
+.root.large-text .cell-code, .root.large-text .cell-est { -fx-font-size: 14px; }
+.root.large-text .badge-text { -fx-font-size: 13px; }
+.root.large-text .board-title { -fx-font-size: 28px; }
+.root.large-text .board-sub, .root.large-text .sort-title, .root.large-text .fids-table .column-header .label { -fx-font-size: 14px; }
+.root.large-text .detail-value { -fx-font-size: 20px; }
+.root.large-text .detail-caption, .root.large-text .hint-caption { -fx-font-size: 12px; }
+.root.large-text .button, .root.large-text .toggle-button { -fx-font-size: 14px; }

@@ -13,10 +13,16 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
-/** Personalised view: search by flight number or booking reference, then show a large "Your Flight" card. */
+/**
+ * Personalised view: search by flight number or booking reference, then show a large "Your Flight" card with a
+ * countdown, check-in and a boarding pass.
+ */
 class LookupView extends ScrollPane {
     private final FidsController ctl;
     private final TextField field = new TextField();
@@ -31,10 +37,11 @@ class LookupView extends ScrollPane {
         setFitToWidth(true);
 
         Label title = Ui.label("Find your flight", "board-title");
-        Label sub = Ui.label("Enter a flight number or booking reference", "board-sub");
+        Label sub = Ui.label("Enter a flight number or booking reference  ·  Ctrl+F from anywhere", "board-sub");
 
         field.setPromptText("e.g. BA064 or BK7F3A");
         field.getStyleClass().add("search-field");
+        field.setAccessibleText("Flight number or booking reference");
         HBox.setHgrow(field, Priority.ALWAYS);
         Button go = Ui.button("Search", "mdi2m-magnify", "action-button", "primary");
         field.setOnAction(e -> ctl.search(field.getText()));
@@ -53,7 +60,7 @@ class LookupView extends ScrollPane {
             hints.getChildren().add(b);
         }
 
-        VBox content = new VBox(18, new VBox(2, title, sub), search, hints, resultHolder);
+        VBox content = new VBox(14, new VBox(2, title, sub), search, hints, resultHolder);
         content.setMaxWidth(900);
         content.setPadding(new Insets(16, 18, 18, 18));
         StackPane center = new StackPane(content);
@@ -61,7 +68,13 @@ class LookupView extends ScrollPane {
         setContent(center);
     }
 
-    void update(AppState st, Optional<Flight> flight, Optional<Booking> booking, boolean pinned) {
+    void focusSearch() {
+        field.requestFocus();
+        field.selectAll();
+    }
+
+    void update(AppState st, Optional<Flight> flight, Optional<Booking> booking, List<Booking> others,
+                boolean pinned, String notice) {
         String q = st.lookupQuery.get();
         current = flight.orElse(null);
         if (q == null || q.isBlank()) {
@@ -71,7 +84,7 @@ class LookupView extends ScrollPane {
             resultHolder.getChildren().setAll(message("mdi2a-alert", "No flight found for “" + q.trim() + "”",
                     "Check the flight number or booking reference and try again."));
         } else {
-            resultHolder.getChildren().setAll(card(flight.get(), booking, pinned));
+            resultHolder.getChildren().setAll(card(flight.get(), booking, others, pinned, notice));
             tick();
         }
     }
@@ -83,7 +96,7 @@ class LookupView extends ScrollPane {
         return v;
     }
 
-    private Node card(Flight f, Optional<Booking> booking, boolean pinned) {
+    private Node card(Flight f, Optional<Booking> booking, List<Booking> others, boolean pinned, String notice) {
         HBox head = new HBox(12, Ui.airlineChip(f.airline()), Ui.label(f.airline().name(), "cell-text"));
         head.setAlignment(Pos.CENTER_LEFT);
         Region grow = new Region();
@@ -129,12 +142,60 @@ class LookupView extends ScrollPane {
         Button route = Ui.button("Show route to gate", "mdi2d-directions", "action-button", "primary");
         route.setOnAction(e -> ctl.showRoute(f.id()));
         HBox actions = new HBox(10, pin, route);
+        if (booking.isPresent() && !booking.get().isCheckedIn()) {
+            Button checkIn = Ui.button("Check in", "mdi2c-check-circle", "action-button", "primary");
+            checkIn.setDisable(!f.canCheckIn());
+            checkIn.setOnAction(e -> ctl.checkIn(booking.get().bookingReference()));
+            actions.getChildren().add(checkIn);
+        }
 
         Region sep = new Region();
         sep.getStyleClass().add("divider");
-        VBox card = new VBox(20, top, new VBox(0, number, dest), countdown, sep, grid, actions);
+        VBox card = new VBox(18, top, new VBox(0, number, dest), countdown, sep, grid, actions);
         card.getStyleClass().add("your-flight");
+        if (notice != null && !notice.isBlank()) card.getChildren().add(Ui.label(notice, "notice"));
+        if (booking.isPresent() && booking.get().isCheckedIn()) card.getChildren().add(boardingPass(f, booking.get()));
+        if (!others.isEmpty()) {
+            HBox more = new HBox(8, Ui.label("ALSO BOOKED", "hint-caption"));
+            more.setAlignment(Pos.CENTER_LEFT);
+            for (Booking o : others) {
+                Button b = new Button(o.bookingReference() + "  ·  " + o.linkedFlightNumber());
+                b.getStyleClass().add("chip-button");
+                b.setFocusTraversable(false);
+                b.setOnAction(e -> { field.setText(o.bookingReference()); ctl.search(o.bookingReference()); });
+                more.getChildren().add(b);
+            }
+            card.getChildren().add(more);
+        }
         return card;
+    }
+
+    /** Printable-style boarding pass with a decorative barcode derived from the booking reference. */
+    private Node boardingPass(Flight f, Booking b) {
+        HBox bars = new HBox(2);
+        bars.setAlignment(Pos.CENTER_LEFT);
+        Random rnd = new Random(b.bookingReference().hashCode());
+        for (int i = 0; i < 46; i++) {
+            Rectangle r = new Rectangle(1 + rnd.nextInt(3), 54);
+            r.getStyleClass().add("barcode-bar");
+            bars.getChildren().add(r);
+        }
+        VBox left = new VBox(6,
+                Ui.label("BOARDING PASS", "pass-title"),
+                Ui.label(b.passengerName().toUpperCase(), "pass-name"),
+                Ui.label(f.displayNumber() + "  ·  " + f.origin().toUpperCase() + " → " + f.destination().toUpperCase(),
+                        "cell-text"),
+                Ui.label("GATE " + f.gate() + "   SEAT " + b.seat() + "   " + b.boardingGroup().toUpperCase()
+                        + "   " + Ui.HHMM.format(f.scheduledTime()), "detail-value"));
+        Region grow = new Region();
+        HBox.setHgrow(grow, Priority.ALWAYS);
+        VBox right = new VBox(4, bars, Ui.label(b.bookingReference(), "cell-code"));
+        right.setAlignment(Pos.CENTER_RIGHT);
+        HBox pass = new HBox(20, left, grow, right);
+        pass.setAlignment(Pos.CENTER_LEFT);
+        pass.getStyleClass().add("boarding-pass");
+        pass.setAccessibleText("Boarding pass for " + b.passengerName() + ", seat " + b.seat() + ", gate " + f.gate());
+        return pass;
     }
 
     /** Called every second by the controller's clock. */

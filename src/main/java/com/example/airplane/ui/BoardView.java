@@ -3,10 +3,10 @@ package com.example.airplane.ui;
 import com.example.airplane.model.Flight;
 import com.example.airplane.state.AppState;
 import com.example.airplane.state.AppState.SortKey;
+import javafx.animation.FadeTransition;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
-import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
@@ -15,11 +15,15 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +36,9 @@ class BoardView extends VBox {
     private final FidsController ctl;
     private final TableView<Flight> table = new TableView<>();
     private final Label subtitle = Ui.label("", "board-sub");
-    private final HBox detailContent = new HBox(36);
+    private final Label updated = Ui.label("", "board-sub");
+    private final Circle liveDot = new Circle(5);
+    private final HBox detailContent = new HBox(32);
     private final StackPane detailWrap = new StackPane(detailContent);
     private final Map<SortKey, FontIcon> arrows = new EnumMap<>(SortKey.class);
     private final Map<SortKey, HBox> headers = new EnumMap<>(SortKey.class);
@@ -40,6 +46,7 @@ class BoardView extends VBox {
     private String flashId;
     private boolean detailOpen;
     private Timeline detailAnim;
+    private LocalDateTime lastShownUpdate;
 
     BoardView(FidsController ctl) {
         super(0);
@@ -48,8 +55,15 @@ class BoardView extends VBox {
         setPadding(new Insets(14, 18, 16, 18));
 
         VBox titles = new VBox(2, Ui.label("Departures", "board-title"), subtitle);
-        HBox top = new HBox(titles);
-        top.setPadding(new Insets(0, 0, 14, 0));
+        liveDot.getStyleClass().add("live-dot");
+        HBox live = new HBox(6, liveDot, Ui.label("LIVE", "live-text"), updated);
+        live.setAlignment(Pos.CENTER_RIGHT);
+        live.setAccessibleText("Live board");
+        Region grow = new Region();
+        HBox.setHgrow(grow, Priority.ALWAYS);
+        HBox top = new HBox(titles, grow, live);
+        top.setAlignment(Pos.BOTTOM_LEFT);
+        top.setPadding(new Insets(0, 0, 12, 0));
 
         buildTable();
         VBox.setVgrow(table, Priority.ALWAYS);
@@ -75,8 +89,8 @@ class BoardView extends VBox {
         table.getStyleClass().add("fids-table");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setFixedCellSize(44);
-        table.setFocusTraversable(false);
         table.setPlaceholder(new Label("No flights to display"));
+        table.setAccessibleText("Departures board. Use the arrow keys to move, Enter to expand, P to pin, R for route.");
 
         table.getColumns().add(column("", 44, null, f -> pinCell(f)));
         table.getColumns().add(column("FLIGHT", 100, null, f -> Ui.label(f.displayNumber(), "cell-flight")));
@@ -99,9 +113,14 @@ class BoardView extends VBox {
             b.setAlignment(Pos.CENTER_LEFT);
             return b;
         }));
-        table.getColumns().add(column("GATE", 80, SortKey.GATE, f -> Ui.label(f.gate(), "cell-gate")));
+        table.getColumns().add(column("GATE", 80, SortKey.GATE, f -> {
+            Label gate = Ui.label(f.gate(), "cell-gate");
+            gate.setTooltip(new Tooltip(f.terminal() + " · Pier " + f.pier()));
+            return gate;
+        }));
         table.getColumns().add(column("STATUS", 170, SortKey.STATUS, f -> {
             Node badge = Ui.statusBadge(f.status());
+            Tooltip.install(badge, new Tooltip(f.status().announcement(f)));
             if (f.id().equals(flashId)) flash(badge);
             return badge;
         }));
@@ -111,17 +130,31 @@ class BoardView extends VBox {
                 @Override
                 protected void updateItem(Flight f, boolean empty) {
                     super.updateItem(f, empty);
-                    getStyleClass().removeAll("pinned-row", "expanded-row", "inactive-row", "target-row");
-                    if (f == null || empty || state == null) return;
+                    getStyleClass().removeAll("pinned-row", "expanded-row", "inactive-row");
+                    if (f == null || empty || state == null) {
+                        setAccessibleText(null);
+                        return;
+                    }
                     if (f.id().equals(state.pinnedFlightId.get())) getStyleClass().add("pinned-row");
                     if (f.id().equals(state.expandedFlightId.get())) getStyleClass().add("expanded-row");
                     if (!f.status().isActive()) getStyleClass().add("inactive-row");
+                    setAccessibleText(f.displayNumber() + " to " + f.destination() + ", departs "
+                            + Ui.HHMM.format(f.scheduledTime()) + ", gate " + f.gate() + ", " + f.status().label());
                 }
             };
             row.setOnMouseClicked(e -> {
                 if (!row.isEmpty()) ctl.onRowClicked(row.getItem().id());
             });
             return row;
+        });
+
+        // Keyboard: arrows move (built in), Enter/Space expand, P pins, R shows the route.
+        table.setOnKeyPressed(e -> {
+            Flight f = table.getSelectionModel().getSelectedItem();
+            if (f == null) return;
+            if (e.getCode() == KeyCode.ENTER || e.getCode() == KeyCode.SPACE) { ctl.onRowClicked(f.id()); e.consume(); }
+            else if (e.getCode() == KeyCode.P) { ctl.togglePin(f.id()); e.consume(); }
+            else if (e.getCode() == KeyCode.R) { ctl.showRoute(f.id()); e.consume(); }
         });
     }
 
@@ -151,6 +184,8 @@ class BoardView extends VBox {
             header.getStyleClass().add("sort-header");
             header.prefWidthProperty().bind(col.widthProperty().subtract(24));
             header.setOnMouseClicked(e -> ctl.sortBy(key));
+            header.setAccessibleText("Sort by " + title.toLowerCase());
+            Tooltip.install(header, new Tooltip("Click to sort by " + title.toLowerCase() + "; click again to reverse"));
             arrows.put(key, arrow);
             headers.put(key, header);
             col.setGraphic(header);
@@ -164,6 +199,8 @@ class BoardView extends VBox {
         pin.getStyleClass().add(pinned ? "pin-on" : "pin-off");
         StackPane p = new StackPane(pin);
         p.getStyleClass().add("pin-hit");
+        p.setAccessibleText(pinned ? "Unpin " + f.displayNumber() : "Pin " + f.displayNumber());
+        Tooltip.install(p, new Tooltip(pinned ? "Unpin this flight" : "Pin this flight to the top"));
         p.setOnMouseClicked(e -> { ctl.togglePin(f.id()); e.consume(); });
         return p;
     }
@@ -182,17 +219,30 @@ class BoardView extends VBox {
         fade.play();
     }
 
-    void update(List<Flight> rows, AppState st, Flight expanded, String flashId) {
+    void update(List<Flight> rows, AppState st, Flight expanded, String flashId, LocalDateTime lastUpdated) {
         this.state = st;
         this.flashId = flashId;
-        if (!rows.equals(table.getItems())) table.getItems().setAll(rows);
+        if (!rows.equals(table.getItems())) {
+            // Keep the keyboard cursor on the same flight when the order changes.
+            Flight keep = table.getSelectionModel().getSelectedItem();
+            table.getItems().setAll(rows);
+            if (keep != null && rows.contains(keep)) table.getSelectionModel().select(keep);
+        }
         table.refresh();
         if (flashId != null) {
             PauseTransition clear = new PauseTransition(Duration.millis(400));
             clear.setOnFinished(e -> this.flashId = null);
             clear.play();
         }
-        subtitle.setText(rows.size() + " flights  ·  click a row for details  ·  pin your flight to keep it on top");
+        subtitle.setText(rows.size() + " flights  ·  click or press Enter on a row for details  ·  pin your flight to keep it on top");
+        updated.setText("Updated " + lastUpdated.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+        if (!lastUpdated.equals(lastShownUpdate)) {
+            lastShownUpdate = lastUpdated;
+            FadeTransition blink = new FadeTransition(Duration.millis(600), liveDot);
+            blink.setFromValue(0.15);
+            blink.setToValue(1);
+            blink.play();
+        }
         for (SortKey k : SortKey.values()) {
             FontIcon arrow = arrows.get(k);
             boolean active = st.sortKey.get() == k;
@@ -203,6 +253,8 @@ class BoardView extends VBox {
         }
         updateDetail(expanded, st);
     }
+
+    void focusTable() { table.requestFocus(); if (table.getSelectionModel().isEmpty()) table.getSelectionModel().selectFirst(); }
 
     private void updateDetail(Flight f, AppState st) {
         if (f != null) {
@@ -216,9 +268,12 @@ class BoardView extends VBox {
             Region grow = new Region();
             HBox.setHgrow(grow, Priority.ALWAYS);
             detailContent.getChildren().setAll(
-                    Ui.label(f.displayNumber() + "  →  " + f.destination().toUpperCase(), "detail-title"),
                     detailItem("TERMINAL", f.terminal()), detailItem("CHECK-IN", f.checkInCounter()),
-                    detailItem("BAGGAGE BELT", f.baggageBelt()), grow, actions);
+                    detailItem("BAGGAGE BELT", f.baggageBelt()), detailItem("AIRCRAFT", f.aircraft().describe()),
+                    grow, actions);
+            if (!f.cancellationReason().isBlank()) {
+                detailContent.getChildren().add(4, detailItem("REASON", f.cancellationReason()));
+            }
         }
         boolean open = f != null;
         if (open == detailOpen) return;
@@ -232,8 +287,9 @@ class BoardView extends VBox {
     }
 
     private Node detailItem(String caption, String value) {
-        VBox v = new VBox(4, Ui.label(caption, "detail-caption"), Ui.label(value, "detail-value"));
-        v.setAlignment(Pos.CENTER_LEFT);
-        return v;
+        Label v = Ui.label(value, "detail-value");
+        VBox box = new VBox(4, Ui.label(caption, "detail-caption"), v);
+        box.setAlignment(Pos.CENTER_LEFT);
+        return box;
     }
 }
