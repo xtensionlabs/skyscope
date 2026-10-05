@@ -123,8 +123,8 @@ class BoardView extends VBox {
         table.getColumns().add(column("", 44, null, f -> pinCell(f))); // pin icon column
         table.getColumns().add(column("FLIGHT", 100, null, f -> Ui.label(f.displayNumber(), "cell-flight")));
         table.getColumns().add(column("AIRLINE", 200, null, f -> {
-            // coloured airline chip + airline name side by side
-            HBox b = new HBox(10, Ui.airlineChip(f.airline()), Ui.label(f.airline().name(), "cell-text"));
+            // the airline's real logo (it already shows the airline name)
+            HBox b = new HBox(Ui.airlineLogo(f.airline()));
             b.setAlignment(Pos.CENTER_LEFT);
             return b;
         }));
@@ -333,8 +333,8 @@ class BoardView extends VBox {
                     detailItem("BAGGAGE BELT", f.baggageBelt()), detailItem("AIRCRAFT", f.aircraft().describe()),
                     grow, actions);
             // If the flight has a cancellation reason, insert it at position 4 (after the aircraft item).
-            if (!f.cancellationReason().isBlank()) {
-                detailContent.getChildren().add(4, detailItem("REASON", f.cancellationReason()));
+            if (!f.statusReason().isBlank()) {
+                detailContent.getChildren().add(4, detailItem("REASON", f.statusReason()));
             }
         }
         boolean open = f != null; // the drawer should be open only when a flight is expanded

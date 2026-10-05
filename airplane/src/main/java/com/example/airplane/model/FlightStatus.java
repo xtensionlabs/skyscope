@@ -28,7 +28,8 @@ public enum FlightStatus implements StatusBehaviour {
     DELAYED("Delayed", "bad", "mdi2c-clock-outline") {
         @Override public Set<FlightStatus> nextStatuses() { return EnumSet.of(BOARDING, CANCELLED); }
         @Override public String announcement(Flight f) {
-            return f.displayNumber() + " to " + f.destination() + " is delayed. New departure time " + time(f) + ".";
+            return f.displayNumber() + " to " + f.destination() + " is delayed. New departure time " + time(f) + "."
+                    + (f.statusReason().isBlank() ? "" : " Reason: " + f.statusReason());
         }
     },
     GATE_CLOSED("Gate Closed", "warn", "mdi2d-door-closed") {
@@ -48,7 +49,7 @@ public enum FlightStatus implements StatusBehaviour {
         // Final state too
         @Override public Set<FlightStatus> nextStatuses() { return EnumSet.noneOf(FlightStatus.class); }
         @Override public String announcement(Flight f) {
-            return f.displayNumber() + " to " + f.destination() + " has been cancelled. " + f.cancellationReason();
+            return f.displayNumber() + " to " + f.destination() + " has been cancelled. " + f.statusReason();
         }
     };
 

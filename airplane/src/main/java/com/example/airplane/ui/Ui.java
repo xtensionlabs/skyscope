@@ -6,6 +6,9 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -13,6 +16,8 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Small factory helpers shared by the views.
@@ -56,8 +61,27 @@ final class Ui {
         return box;
     }
 
-    /** Simple airline "logo": a rounded chip in the brand colour with the IATA code. */
-    static Node airlineChip(Airline a) {
+    // Logos already loaded, keyed by IATA code (a cache, so each picture file is read only once)
+    private static final Map<String, Image> LOGOS = new HashMap<>();
+
+    /** Real airline logo from resources/logos/XX.png; falls back to a plain coloured code box if there is no file. */
+    static Node airlineLogo(Airline a) {
+        Image img = LOGOS.computeIfAbsent(a.code(), c -> {
+            var in = Ui.class.getResourceAsStream("/logos/" + c + ".png"); // null when the file is missing
+            return in == null ? null : new Image(in);
+        });
+        if (img == null) return airlineChip(a);
+        ImageView view = new ImageView(img);
+        view.setFitWidth(84);          // logo files are 200x80; shrink to fit a table row
+        view.setFitHeight(34);
+        view.setPreserveRatio(true);   // never stretch the picture
+        view.setSmooth(true);
+        Tooltip.install(view, new Tooltip(a.name())); // hover shows the full airline name
+        return view;
+    }
+
+    /** Fallback "logo": a small box in the brand colour with the IATA code. */
+    private static Node airlineChip(Airline a) {
         Label code = label(a.code(), "airline-chip-text");
         StackPane chip = new StackPane(code); // StackPane centres its child
         chip.getStyleClass().add("airline-chip");

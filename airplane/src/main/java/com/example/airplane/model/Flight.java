@@ -20,7 +20,7 @@ public class Flight {
 
     /** Memento of the mutable parts of a flight, used for undo and persistence. */
     // Record nested inside Flight: stores a copy of the values that can change (Memento design pattern)
-    public record Snapshot(String gate, FlightStatus status, LocalDateTime estimatedTime, String cancellationReason) { }
+    public record Snapshot(String gate, FlightStatus status, LocalDateTime estimatedTime, String statusReason) { }
 
     // Fields that never change after creation (final)
     private final String flightNumber;
@@ -36,7 +36,7 @@ public class Flight {
     private LocalDateTime estimatedTime;
     private String gate;
     private FlightStatus status;
-    private String cancellationReason = "";
+    private String statusReason = "";          // why the flight is delayed or cancelled (empty otherwise)
 
     // Constructor: validates every input first, so an invalid Flight object can never exist
     public Flight(String flightNumber, Airline airline, String origin, String destination, String destinationCode,
@@ -104,7 +104,7 @@ public class Flight {
     public String checkInCounter() { return checkInCounter; }
     public String baggageBelt() { return baggageBelt; }
     public Aircraft aircraft() { return aircraft; }
-    public String cancellationReason() { return cancellationReason; }
+    public String statusReason() { return statusReason; }
 
     /** "B2" -> "B02" so gates sort naturally. */
     // %02d pads the number to 2 digits, so B2 sorts before B10-style values
@@ -143,20 +143,27 @@ public class Flight {
                     + status.label() + " to " + next.label());
         }
         status = next;
+        statusReason = "";   // the old reason (e.g. for a delay) no longer applies
     }
 
     /** Administrative override: sets any status without checking transitions. */
-    public void forceStatus(FlightStatus next) { status = next; }
+    public void forceStatus(FlightStatus next) {
+        status = next;
+        statusReason = "";   // no reason is known for a forced status
+    }
 
-    /** Pushes the estimated departure later and marks the flight Delayed. */
-    public void delayByMinutes(int minutes) throws InvalidFlightException {
+    /** Pushes the estimated departure later, records why, and marks the flight Delayed. */
+    public void delayByMinutes(int minutes, String reason) throws InvalidFlightException {
         // Only delays of 1 to 720 minutes (12 hours) are accepted
         if (minutes <= 0 || minutes > 720) throw new InvalidFlightException("Delay must be between 1 and 720 minutes");
-        // Only On Time or already Delayed flights can be delayed (more)
-        if (status != FlightStatus.ON_TIME && status != FlightStatus.DELAYED) {
+        // A delay must always be explained to passengers
+        if (reason == null || reason.isBlank()) throw new InvalidFlightException("A reason for the delay is required");
+        // On Time, Delayed (more) or Boarding flights can be delayed; once the gate has closed it is too late
+        if (status != FlightStatus.ON_TIME && status != FlightStatus.DELAYED && status != FlightStatus.BOARDING) {
             throw new InvalidFlightException(displayNumber() + " cannot be delayed while " + status.label());
         }
         estimatedTime = estimatedTime.plusMinutes(minutes);   // scheduledTime stays unchanged
+        statusReason = reason.trim();
         status = FlightStatus.DELAYED;
     }
 
@@ -167,14 +174,14 @@ public class Flight {
             throw new InvalidFlightException(displayNumber() + " is already " + status.label().toLowerCase());
         }
         // If no reason was given use a default one
-        cancellationReason = (reason == null || reason.isBlank()) ? "Operational reasons." : reason.trim();
+        statusReason = (reason == null || reason.isBlank()) ? "Operational reasons." : reason.trim();
         status = FlightStatus.CANCELLED;
     }
 
     // ---- memento / persistence support -------------------------------------------------------
 
     // Takes a copy of the changeable values (used for undo and saving)
-    public Snapshot snapshot() { return new Snapshot(gate, status, estimatedTime, cancellationReason); }
+    public Snapshot snapshot() { return new Snapshot(gate, status, estimatedTime, statusReason); }
 
     // Puts the flight back to the values stored in a snapshot (undo / loading)
     public void restore(Snapshot s) {
@@ -182,7 +189,7 @@ public class Flight {
         status = s.status();
         estimatedTime = s.estimatedTime();
         // Guard against a null reason
-        cancellationReason = s.cancellationReason() == null ? "" : s.cancellationReason();
+        statusReason = s.statusReason() == null ? "" : s.statusReason();
     }
 
     /** Moves all times by a fixed amount (used when reloading saved data). */

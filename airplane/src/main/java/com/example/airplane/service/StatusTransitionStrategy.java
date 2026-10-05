@@ -17,4 +17,7 @@ public interface StatusTransitionStrategy {
 
     // Given a flight, the current time and a random generator, return the next status, or empty for "no change".
     Optional<FlightStatus> next(Flight flight, LocalDateTime now, Random rnd);
+
+    // Should the simulator also make random gate changes? Off by default; only the demo strategy turns it on.
+    default boolean randomGateChanges() { return false; }
 }

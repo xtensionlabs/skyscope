@@ -14,6 +14,9 @@ import java.util.Random;
 public class RandomProgressionStrategy implements StatusTransitionStrategy {
     @Override public String name() { return "Demo (fast, ignores the clock)"; }
 
+    // Demo mode also shuffles gates now and then to keep the board busy
+    @Override public boolean randomGateChanges() { return true; }
+
     @Override
     public Optional<FlightStatus> next(Flight f, LocalDateTime now, Random rnd) {
         // Switch on the current status and pick the next one in the normal life cycle.

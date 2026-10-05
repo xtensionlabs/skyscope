@@ -73,6 +73,13 @@ public class JsonDataSource implements FlightDataSource {
                 Passenger p = people.computeIfAbsent(r.passengerId(), id -> new Passenger(id, r.passengerName()));
                 bookings.add(new Booking(r.reference(), p, r.flight(), r.seat(), r.group(), r.checkedIn()));
             }
+            // Stale file: every flight already departed or cancelled, so the board would be empty of live flights.
+            // Start again from the seed data so there is always a mix of statuses to show.
+            if (flights.stream().noneMatch(f -> f.status().isActive())) {
+                Snapshot fresh = SampleData.create(LocalDateTime.now());
+                save(fresh);
+                return fresh;
+            }
             return new Snapshot(flights, bookings);
         } catch (JsonParseException | IllegalArgumentException | java.time.DateTimeException e) {
             // Exception handling: bad JSON, bad enum name or bad date all become one friendly IOException
@@ -104,7 +111,7 @@ public class JsonDataSource implements FlightDataSource {
     private static FlightRec toRec(Flight f) {
         return new FlightRec(f.flightNumber(), f.airline().code(), f.origin(), f.destination(), f.destinationCode(),
                 f.scheduledTime().toString(), f.estimatedTime().toString(), f.gate(), f.status().name(),
-                f.checkInCounter(), f.baggageBelt(), f.aircraft().key(), f.cancellationReason());
+                f.checkInCounter(), f.baggageBelt(), f.aircraft().key(), f.statusReason());
     }
 
     // Converts a file record back into a Flight, moving its times forward by "shift"

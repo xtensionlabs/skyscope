@@ -123,7 +123,7 @@ class FlightServiceTest {
     @Test
     void commandsExecuteAreAuditedAndUndoable() throws Exception {
         service.execute(new ChangeGateCommand("KQ412", "A4"), "STAFF");
-        service.execute(new DelayCommand("KQ412", 40), "STAFF");
+        service.execute(new DelayCommand("KQ412", 40, "Test reason"), "STAFF");
         Flight f = service.get("KQ412");
         assertEquals("A4", f.gate());
         assertEquals(FlightStatus.DELAYED, f.status());
@@ -153,7 +153,7 @@ class FlightServiceTest {
         assertEquals(FlightStatus.CANCELLED, service.get("BA064").status());
         service.undoLast("STAFF");
         assertEquals(FlightStatus.ON_TIME, service.get("BA064").status());
-        assertTrue(service.get("BA064").cancellationReason().isBlank());
+        assertTrue(service.get("BA064").statusReason().isBlank());
     }
 
     @Test
@@ -171,6 +171,6 @@ class FlightServiceTest {
     @Test
     void unknownFlightInCommand() {
         assertThrows(FlightNotFoundException.class,
-                () -> service.execute(new DelayCommand("XX999", 10), "STAFF"));
+                () -> service.execute(new DelayCommand("XX999", 10, "Test reason"), "STAFF"));
     }
 }

@@ -119,8 +119,8 @@ class LookupView extends ScrollPane {
 
     /** Builds the big "Your Flight" card for flight f (and the passenger's booking, if one was searched). */
     private Node card(Flight f, Optional<Booking> booking, List<Booking> others, boolean pinned, String notice) {
-        // Top row: airline chip + name on the left, status badge on the right (spacer in between).
-        HBox head = new HBox(12, Ui.airlineChip(f.airline()), Ui.label(f.airline().name(), "cell-text"));
+        // Top row: airline logo on the left, status badge on the right (spacer in between).
+        HBox head = new HBox(12, Ui.airlineLogo(f.airline()));
         head.setAlignment(Pos.CENTER_LEFT);
         Region grow = new Region();
         HBox.setHgrow(grow, Priority.ALWAYS);

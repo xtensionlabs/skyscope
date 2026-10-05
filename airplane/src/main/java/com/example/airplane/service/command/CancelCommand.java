@@ -19,5 +19,5 @@ public class CancelCommand extends FlightCommand {
 
     // Log text; uses the flight's stored cancellation reason.
     @Override
-    public String describe() { return "Cancel " + flight.displayNumber() + " (" + flight.cancellationReason() + ")"; }
+    public String describe() { return "Cancel " + flight.displayNumber() + " (" + flight.statusReason() + ")"; }
 }

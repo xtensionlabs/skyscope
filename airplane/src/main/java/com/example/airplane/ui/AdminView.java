@@ -11,13 +11,12 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.*;
 import javafx.util.StringConverter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -36,12 +35,19 @@ class AdminView extends ScrollPane {
     // manage
     // Drop-down listing every flight; staff choose which one to change.
     private final ComboBox<Flight> picker = new ComboBox<>();
-    // Input for the new gate.
-    private final TextField gateField = new TextField();
-    // Input for the delay in minutes.
-    private final TextField delayField = new TextField();
-    // Input for the cancellation reason.
-    private final TextField reasonField = new TextField();
+    // Drop-down of the gates that are free for the selected flight (so staff never have to guess).
+    private final ComboBox<String> gateBox = new ComboBox<>();
+    // Drop-down of common delay lengths, in minutes.
+    private final ComboBox<Integer> delayBox = new ComboBox<>(FXCollections.observableArrayList(
+            10, 15, 20, 30, 45, 60, 90, 120, 180, 240));
+    // Editable drop-down: pick a common reason for the delay or type your own (a reason is required).
+    private final ComboBox<String> delayReasonBox = new ComboBox<>(FXCollections.observableArrayList(
+            "Late arrival of inbound aircraft.", "Bad weather", "Technical check", "Crew delay",
+            "Air traffic control restrictions", "Baggage loading delay"));
+    // Editable drop-down: pick a common cancellation reason or type your own.
+    private final ComboBox<String> reasonBox = new ComboBox<>(FXCollections.observableArrayList(
+            "Bad weather", "Technical fault", "Aircraft unavailable.", "Crew unavailable",
+            "Air traffic control restrictions", "Operational reasons."));
     // Drop-down of all possible statuses (values() returns every enum constant).
     private final ComboBox<FlightStatus> statusBox = new ComboBox<>(FXCollections.observableArrayList(FlightStatus.values()));
     // Button to undo the last staff action.
@@ -49,15 +55,18 @@ class AdminView extends ScrollPane {
 
     // add flight
     // Inputs of the "Add a flight" form.
-    private final TextField noField = new TextField();       // flight number
+    private final TextField noField = new TextField();       // flight number digits (the airline code is added for you)
     private final ComboBox<Airline> airlineBox = new ComboBox<>(FXCollections.observableArrayList(SampleData.airlines()));
-    private final TextField destField = new TextField();     // destination city
-    private final TextField codeField = new TextField();     // destination airport code
-    private final TextField timeField = new TextField();     // departure time HH:mm
-    private final TextField newGateField = new TextField();  // gate
+    // Destination drop-down; choosing a city also fills in its airport code.
+    private final ComboBox<SampleData.Destination> destBox = new ComboBox<>(FXCollections.observableArrayList(SampleData.destinations()));
+    // Departure time as two drop-downs: hour (00-23) and minute (every 5 minutes).
+    private final ComboBox<String> hourBox = new ComboBox<>(FXCollections.observableArrayList(numbers(24, 1)));
+    private final ComboBox<String> minuteBox = new ComboBox<>(FXCollections.observableArrayList(numbers(60, 5)));
+    // Only the gates that are free around the chosen time are listed here.
+    private final ComboBox<String> newGateBox = new ComboBox<>();
     private final ComboBox<String> aircraftBox = new ComboBox<>(FXCollections.observableArrayList(Aircraft.knownKeys()));
-    private final TextField checkInField = new TextField();  // check-in counters
-    private final TextField beltField = new TextField();     // baggage belt
+    private final ComboBox<String> checkInBox = new ComboBox<>(FXCollections.observableArrayList(withTba(SampleData.checkInDesks())));
+    private final ComboBox<String> beltBox = new ComboBox<>(FXCollections.observableArrayList(withTba(SampleData.baggageBelts())));
 
     // simulation + audit
     // Drop-down to choose how flight statuses progress (Strategy pattern: each option is a different algorithm).
@@ -90,25 +99,34 @@ class AdminView extends ScrollPane {
             @Override public FlightStatus fromString(String s) { return null; }
         });
         statusBox.getStyleClass().add("flight-picker");
-        gateField.setPromptText("New gate, e.g. B4");
-        delayField.setPromptText("Minutes, e.g. 30");
-        reasonField.setPromptText("Reason (optional)");
+        // Whenever another flight is chosen, list only the gates that are free for it.
+        picker.valueProperty().addListener((o, a, b) -> refreshGateChoices());
+        dropDown(gateBox, "Select a flight first");
+        dropDown(delayBox, "Delay length");
+        delayBox.setConverter(new StringConverter<>() {
+            @Override public String toString(Integer m) { return m == null ? "" : m + " minutes"; }
+            @Override public Integer fromString(String s) { return null; }
+        });
+        dropDown(delayReasonBox, "Reason for delay (required)");
+        delayReasonBox.setEditable(true);
+        dropDown(reasonBox, "Reason for cancellation (pick or type)");
+        reasonBox.setEditable(true); // allow a custom reason as well as the presets
 
         // Each button builds a Command object for the selected flight and withSelected() runs it.
         Button gateBtn = Ui.button("Change gate", "mdi2d-directions", "action-button");
-        gateBtn.setOnAction(e -> withSelected(f -> new ChangeGateCommand(f.id(), gateField.getText().trim().toUpperCase())));
+        gateBtn.setOnAction(e -> withSelected(f -> {
+            if (gateBox.getValue() == null) { show("Choose a gate first.", false); return null; }
+            return new ChangeGateCommand(f.id(), gateBox.getValue());
+        }));
         Button delayBtn = Ui.button("Delay flight", "mdi2c-clock-outline", "action-button");
         delayBtn.setOnAction(e -> withSelected(f -> {
-            try {
-                return new DelayCommand(f.id(), Integer.parseInt(delayField.getText().trim())); // text -> int
-            } catch (NumberFormatException ex) {
-                // The user typed something that is not a whole number.
-                show("Enter the delay as a whole number of minutes.", false);
-                return null; // null means "no command to run"
-            }
+            if (delayBox.getValue() == null) { show("Choose how long the delay is.", false); return null; }
+            String why = delayReasonBox.getEditor().getText().trim();
+            if (why.isEmpty()) { show("Give a reason for the delay.", false); return null; }
+            return new DelayCommand(f.id(), delayBox.getValue(), why); // null from the factory means "no command to run"
         }));
         Button cancelBtn = Ui.button("Cancel flight", "mdi2c-close-circle", "action-button");
-        cancelBtn.setOnAction(e -> withSelected(f -> new CancelCommand(f.id(), reasonField.getText())));
+        cancelBtn.setOnAction(e -> withSelected(f -> new CancelCommand(f.id(), reasonBox.getEditor().getText())));
         Button statusBtn = Ui.button("Force status", "mdi2a-airplane", "action-button");
         statusBtn.setOnAction(e -> withSelected(f -> {
             if (statusBox.getValue() == null) { show("Choose a status first.", false); return null; }
@@ -121,34 +139,46 @@ class AdminView extends ScrollPane {
 
         // First card: the picker followed by one row per action (input + button).
         VBox manage = card("Manage a flight", picker,
-                row(gateField, gateBtn), row(delayField, delayBtn), row(reasonField, cancelBtn),
+                row(gateBox, gateBtn), delayReasonBox, row(delayBox, delayBtn), row(reasonBox, cancelBtn),
                 row(statusBox, statusBtn), undoBtn);
 
         // add flight form
-        noField.setPromptText("Flight no., e.g. KQ777");
-        airlineBox.setPromptText("Airline");
-        airlineBox.setMaxWidth(Double.MAX_VALUE);
-        airlineBox.getStyleClass().add("flight-picker");
+        noField.setPromptText("Flight number digits, e.g. 777");
+        // Only digits, at most 4 (the TextFormatter rejects any other key press).
+        noField.setTextFormatter(new TextFormatter<String>(c -> c.getControlNewText().matches("\\d{0,4}") ? c : null));
+        dropDown(airlineBox, "Airline");
         // Show an airline as "CODE · Name".
         airlineBox.setConverter(new StringConverter<>() {
             @Override public String toString(Airline a) { return a == null ? "" : a.code() + " · " + a.name(); }
             @Override public Airline fromString(String s) { return null; }
         });
-        destField.setPromptText("Destination, e.g. Cairo");
-        codeField.setPromptText("Code, e.g. CAI");
-        timeField.setPromptText("Time HH:mm, e.g. 18:45");
-        newGateField.setPromptText("Gate, e.g. C4");
-        aircraftBox.setPromptText("Aircraft");
+        dropDown(destBox, "Destination");
+        destBox.setConverter(new StringConverter<>() {
+            @Override public String toString(SampleData.Destination d) { return d == null ? "" : d.city() + " (" + d.code() + ")"; }
+            @Override public SampleData.Destination fromString(String s) { return null; }
+        });
+        dropDown(hourBox, "Hour");
+        dropDown(minuteBox, "Min");
+        // Gates depend on the departure time, so refresh them whenever the hour or minute changes.
+        hourBox.valueProperty().addListener((o, a, b) -> refreshNewGateChoices());
+        minuteBox.valueProperty().addListener((o, a, b) -> refreshNewGateChoices());
+        HBox timeRow = new HBox(8, hourBox, Ui.label(":", "detail-title"), minuteBox);
+        timeRow.setAlignment(Pos.CENTER_LEFT);
+        dropDown(newGateBox, "Pick a time to see free gates");
+        dropDown(aircraftBox, "Aircraft");
         aircraftBox.setValue("A320"); // default aircraft type
-        aircraftBox.setMaxWidth(Double.MAX_VALUE);
-        aircraftBox.getStyleClass().add("flight-picker");
-        checkInField.setPromptText("Check-in, e.g. D 10-14");
-        beltField.setPromptText("Belt, e.g. Belt 2");
+        dropDown(checkInBox, "Check-in desks");
+        checkInBox.setValue("TBA");
+        dropDown(beltBox, "Baggage belt");
+        beltBox.setValue("TBA");
         Button addBtn = Ui.button("Add flight", "mdi2a-airplane-takeoff", "action-button", "primary");
         addBtn.setOnAction(e -> addFlight());
         // Second card: all form fields in order, then the Add button.
-        VBox add = card("Add a flight", noField, airlineBox, destField, codeField, timeField, newGateField,
-                aircraftBox, checkInField, beltField, addBtn);
+        // Every field gets a small caption above it, so it is clear what each box is for even after it has a value.
+        VBox add = card("Add a flight", captioned("AIRLINE", airlineBox), captioned("FLIGHT NUMBER (digits only)", noField),
+                captioned("DESTINATION", destBox), captioned("DEPARTURE TIME (24-hour)", timeRow),
+                captioned("GATE (only free gates are listed)", newGateBox), captioned("AIRCRAFT TYPE", aircraftBox),
+                captioned("CHECK-IN DESKS", checkInBox), captioned("BAGGAGE BELT", beltBox), addBtn);
 
         // simulation + audit
         strategyBox.setItems(FXCollections.observableArrayList(strategies)); // fill the drop-down with the strategies given
@@ -242,36 +272,100 @@ class AdminView extends ScrollPane {
     /** Reads the "Add a flight" form, builds a new Flight and asks the controller to add it. */
     private void addFlight() {
         try {
+            // Every choice must be made before a flight can be built.
             if (airlineBox.getValue() == null) { show("Choose an airline.", false); return; }
-            LocalTime time = LocalTime.parse(timeField.getText().trim()); // throws DateTimeParseException if badly typed
-            LocalDateTime when = LocalDate.now().atTime(time); // today at that time
-            if (when.isBefore(LocalDateTime.now())) when = when.plusDays(1); // time already passed, so use tomorrow
-            String no = noField.getText().replaceAll("\\s+", "").toUpperCase(); // remove spaces, make capitals
+            if (noField.getText().isBlank()) { show("Enter the flight number digits.", false); return; }
+            if (destBox.getValue() == null) { show("Choose a destination.", false); return; }
+            LocalDateTime when = departureTime();
+            if (when == null) { show("Choose the departure hour and minute.", false); return; }
+            if (newGateBox.getValue() == null) { show("Choose a gate.", false); return; }
+            SampleData.Destination dest = destBox.getValue();
+            String no = airlineBox.getValue().code() + noField.getText().trim(); // airline code + digits, e.g. KQ777
             // Create the Flight object; origin is fixed to Nairobi and a new flight starts ON_TIME.
-            Flight f = new Flight(no, airlineBox.getValue(), "Nairobi", destField.getText(), codeField.getText(),
-                    when, newGateField.getText().trim().toUpperCase(), FlightStatus.ON_TIME,
-                    orTba(checkInField.getText()), orTba(beltField.getText()), Aircraft.of(aircraftBox.getValue()));
+            Flight f = new Flight(no, airlineBox.getValue(), "Nairobi", dest.city(), dest.code(),
+                    when, newGateBox.getValue(), FlightStatus.ON_TIME,
+                    checkInBox.getValue(), beltBox.getValue(), Aircraft.of(aircraftBox.getValue()));
             AdminCommand cmd = new AddFlightCommand(f);
             Optional<String> err = ctl.runStaff(cmd);
             show(err.orElse("Done: " + cmd.describe()), err.isEmpty());
             if (err.isEmpty()) {
-                // Success: clear the text boxes ready for the next flight.
-                for (TextField t : List.of(noField, destField, codeField, timeField, newGateField, checkInField, beltField)) t.clear();
+                // Success: clear the form ready for the next flight.
+                noField.clear();
+                destBox.setValue(null);
+                hourBox.setValue(null);
+                minuteBox.setValue(null);
+                checkInBox.setValue("TBA");
+                beltBox.setValue("TBA");
             }
-        } catch (DateTimeParseException e) {
-            show("Time must look like 18:45 (24-hour HH:mm).", false);
         } catch (FidsException e) {
             // Our own exception class: thrown when the flight data fails validation.
             show(e.getMessage(), false);
         }
     }
 
-    /** Returns "TBA" (to be announced) when the text is empty, otherwise the trimmed text. */
-    private static String orTba(String s) { return s == null || s.isBlank() ? "TBA" : s.trim(); }
+    /** Helper: puts a small grey caption above a form field (and gives text boxes the form style first). */
+    private static VBox captioned(String caption, Node field) {
+        if (field instanceof TextField tf) tf.getStyleClass().add("form-field");
+        return new VBox(3, Ui.label(caption, "detail-caption"), field);
+    }
+
+    /** Helper: styles a drop-down like the others (full width, classic look) and sets its hint text. */
+    private static void dropDown(ComboBox<?> box, String prompt) {
+        box.setPromptText(prompt);
+        box.setMaxWidth(Double.MAX_VALUE);
+        box.getStyleClass().add("flight-picker");
+    }
+
+    /** Helper: the numbers 0 .. limit-1 in steps, as two-digit text ("00", "05", ...). */
+    private static List<String> numbers(int limit, int step) {
+        List<String> out = new ArrayList<>();
+        for (int i = 0; i < limit; i += step) out.add(String.format("%02d", i));
+        return out;
+    }
+
+    /** Helper: the given options with "TBA" (to be announced) added at the front. */
+    private static List<String> withTba(List<String> options) {
+        List<String> out = new ArrayList<>();
+        out.add("TBA");
+        out.addAll(options);
+        return out;
+    }
+
+    /** The departure time chosen in the form (today, or tomorrow if that time has passed); null if not chosen yet. */
+    private LocalDateTime departureTime() {
+        if (hourBox.getValue() == null || minuteBox.getValue() == null) return null;
+        LocalDateTime when = LocalDate.now().atTime(Integer.parseInt(hourBox.getValue()), Integer.parseInt(minuteBox.getValue()));
+        return when.isBefore(LocalDateTime.now()) ? when.plusDays(1) : when;
+    }
+
+    /** Helper: replaces a drop-down's options but keeps the current choice when it is still valid. */
+    private static void setChoices(ComboBox<String> box, List<String> items) {
+        if (box.getItems().equals(items)) return; // nothing changed: don't disturb an open list
+        String keep = box.getValue();
+        box.getItems().setAll(items);
+        box.setValue(keep != null && items.contains(keep) ? keep : null);
+    }
+
+    /** "Change gate" drop-down: gates that are free at the selected flight's time (not counting its own gate). */
+    private void refreshGateChoices() {
+        Flight f = picker.getValue();
+        if (f == null) { setChoices(gateBox, List.of()); gateBox.setPromptText("Select a flight first"); return; }
+        setChoices(gateBox, ctl.freeGates(f.scheduledTime(), f).stream().filter(g -> !g.equals(f.gate())).toList());
+        gateBox.setPromptText("New gate (" + gateBox.getItems().size() + " free)");
+    }
+
+    /** "Add flight" gate drop-down: gates that are free around the chosen departure time. */
+    private void refreshNewGateChoices() {
+        LocalDateTime when = departureTime();
+        if (when == null) { setChoices(newGateBox, List.of()); newGateBox.setPromptText("Pick a time to see free gates"); return; }
+        setChoices(newGateBox, ctl.freeGates(when, null));
+        newGateBox.setPromptText("Gate (" + newGateBox.getItems().size() + " free)");
+    }
 
     /** Shows a message in green (ok = true) or red (ok = false) by swapping the CSS class. */
     private void show(String text, boolean ok) {
         message.setText(text);
+        setVvalue(0); // scroll to the top, where the message line is
         message.getStyleClass().removeAll("notice", "notice-error");
         message.getStyleClass().add(ok ? "notice" : "notice-error");
     }
@@ -289,6 +383,9 @@ class AdminView extends ScrollPane {
         }
         // Re-render the selected item's text (status/gate may have changed).
         picker.setButtonCell(flightCell());
+        // Flights changed, so the lists of free gates may have changed too.
+        refreshGateChoices();
+        refreshNewGateChoices();
         // Convert each AuditEntry to text with a stream and show newest first (as supplied).
         auditList.getItems().setAll(audit.stream().map(AuditEntry::toString).toList());
         undoBtn.setDisable(!canUndo); // disabled when there is nothing to undo

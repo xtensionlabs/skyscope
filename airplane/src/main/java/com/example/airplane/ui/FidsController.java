@@ -58,7 +58,7 @@ public class FidsController implements FlightListener {
     private final SimulationService simulation = new SimulationService(service);
     // Two interchangeable ways of changing statuses (Strategy pattern); typed by the interface.
     private final List<StatusTransitionStrategy> strategies =
-            List.of(new RandomProgressionStrategy(), new TimeAwareStrategy());
+            List.of(new TimeAwareStrategy(), new RandomProgressionStrategy());
 
     // The views (the screens). "this" is passed so each view can call back into this controller.
     private final HeaderBar header = new HeaderBar(this);
@@ -104,7 +104,7 @@ public class FidsController implements FlightListener {
         // Banner is added last so it floats over the layout.
         root.getChildren().addAll(layout, banner);
 
-        simulation.setStrategy(strategies.get(0)); // start with the random strategy
+        simulation.setStrategy(strategies.get(0)); // start with the realistic (clock-based) strategy
         service.addListener(this); // subscribe: onFlightEvent() is called whenever a flight changes
         // Whenever any AppState value changes, redraw (unless a batch is in progress).
         state.onChange(() -> { if (suspended == 0) refresh(); });
@@ -162,6 +162,9 @@ public class FidsController implements FlightListener {
 
     // Focuses the search box; runLater waits until the screen is actually visible.
     private void focusLookup() { Platform.runLater(lookup::focusSearch); }
+
+    // Gates free around a departure time (ignoring one flight, e.g. the one being moved); used by the staff drop-downs.
+    List<String> freeGates(java.time.LocalDateTime when, Flight ignore) { return service.availableGates(when, ignore); }
 
     // Lets the admin view access the simulation (package-private getter).
     SimulationService simulation() { return simulation; }

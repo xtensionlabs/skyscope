@@ -22,8 +22,8 @@ public class SimulationService {
     private final FlightService service;     // the business layer we change flights through
     private final Random rnd = new Random(); // source of random choices
     private final Timeline timeline;         // JavaFX timer that calls tick() repeatedly
-    // Current strategy (declared as the interface type so it can be swapped; default is demo mode)
-    private StatusTransitionStrategy strategy = new RandomProgressionStrategy();
+    // Current strategy (declared as the interface type so it can be swapped; default is realistic mode)
+    private StatusTransitionStrategy strategy = new TimeAwareStrategy();
 
     public SimulationService(FlightService service) {
         this.service = service;
@@ -46,8 +46,8 @@ public class SimulationService {
 
     /** One simulation step: usually a status change, sometimes a gate change. */
     public void tick() {
-        // 1 in 4 chance of trying a gate change first; if it worked, this step is finished
-        if (rnd.nextInt(4) == 0 && triggerGateChange()) return;
+        // Only if the strategy allows it: 1 in 4 chance of trying a gate change first; if it worked, this step is finished
+        if (strategy.randomGateChanges() && rnd.nextInt(4) == 0 && triggerGateChange()) return;
         // Collect flights that are still active (not departed/cancelled) and shuffle them for randomness
         List<Flight> active = new ArrayList<>(service.flights().stream().filter(f -> f.status().isActive()).toList());
         Collections.shuffle(active, rnd);
@@ -58,7 +58,7 @@ public class SimulationService {
             if (next.isEmpty()) continue; // nothing to do for this flight, try the next one
             try {
                 // A delay is a special case: it moves the time by 25 minutes
-                if (next.get() == FlightStatus.DELAYED) service.delay(f, 25);
+                if (next.get() == FlightStatus.DELAYED) service.delay(f, 25, "Late arrival of inbound aircraft.");
                 else service.moveStatus(f, next.get());
                 service.record("SIMULATION", f.displayNumber() + " is now " + next.get().label()); // add to audit log
                 return; // only one change per tick

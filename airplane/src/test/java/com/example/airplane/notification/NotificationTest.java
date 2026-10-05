@@ -52,7 +52,7 @@ class NotificationTest {
     @Test
     void delayNotificationUsesStatusAnnouncement() throws Exception {
         Flight f = TestData.flight("BA064");
-        f.delayByMinutes(30);
+        f.delayByMinutes(30, "Test reason");
         Notification n = Notification.from(new FlightEvent(Type.DELAYED, f, "On Time")).orElseThrow();
         assertInstanceOf(DelayNotification.class, n);
         assertTrue(n.body().contains("delayed"));

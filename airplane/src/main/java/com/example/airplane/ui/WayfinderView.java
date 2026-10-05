@@ -33,6 +33,8 @@ class WayfinderView extends HBox {
     private final Pane map = new Pane();
     // Gate name (e.g. "A3") -> its rectangle, so we can highlight the target gate quickly.
     private final Map<String, Rectangle> gateBoxes = new HashMap<>();
+    // Gate name -> its text, so the highlighted gate can use dark text on yellow.
+    private final Map<String, Text> gateTexts = new HashMap<>();
     // Group that holds the route line and walking dot; cleared and redrawn on every update.
     private final Group routeLayer = new Group();
     // Drop-down to choose a flight.
@@ -122,22 +124,25 @@ class WayfinderView extends HBox {
         // Corridors (piers) and plaza
         // rect(x, y, width, height, cornerRadius); the style name picks the colour from CSS.
         map.getChildren().addAll(
-                shape(rect(60, 372, 440, 36, 10), "map-corridor"), shape(rect(500, 372, 440, 36, 10), "map-corridor"),
-                shape(rect(482, 40, 36, 350, 10), "map-corridor"), shape(rect(420, 340, 160, 100, 18), "map-plaza"),
-                shape(rect(460, 448, 80, 36, 8), "map-facility"), shape(rect(300, 500, 400, 110, 16), "map-hall"),
-                shape(rect(70, 500, 200, 110, 16), "map-facility"), shape(rect(730, 500, 200, 110, 16), "map-facility"));
+                shape(rect(60, 372, 440, 36, 0), "map-corridor"), shape(rect(500, 372, 440, 36, 0), "map-corridor"),
+                shape(rect(482, 40, 36, 350, 0), "map-corridor"), shape(rect(420, 340, 160, 100, 0), "map-plaza"),
+                shape(rect(460, 448, 80, 36, 0), "map-facility"), shape(rect(300, 500, 400, 110, 0), "map-hall"),
+                shape(rect(70, 500, 200, 110, 0), "map-facility"), shape(rect(730, 500, 200, 110, 0), "map-facility"));
 
         // Text labels: text(words, centreX, baselineY, style).
+        // The route always runs down the middle (x = 500), so labels near it sit to one side of that line,
+        // and the pier names sit just outside the rows of gate boxes so they never overlap a gate.
         map.getChildren().addAll(
-                text("CENTRAL PLAZA", 500, 418, "map-label-sm"), text("Food court  ·  Duty free", 500, 356, "map-label-xs"),
-                text("SECURITY", 500, 471, "map-label-sm"), text("DEPARTURES HALL", 500, 535, "map-label"),
-                text("Check-in · Information", 500, 556, "map-label-xs"),
+                text("PLAZA", 540, 418, "map-label-sm"), text("Food · Shops", 540, 362, "map-label-xs"),
+                text("SECURITY", 592, 471, "map-label-sm"), text("DEPARTURES HALL", 400, 535, "map-label"),
+                text("Check-in · Information", 400, 556, "map-label-xs"),
                 text("CHECK-IN ZONES", 170, 555, "map-label-sm"), text("LOUNGES & RETAIL", 830, 555, "map-label-sm"),
-                text("TERMINAL 1  ·  PIER A", 200, 450, "map-terminal"),
-                text("TERMINAL 3  ·  PIER C", 800, 450, "map-terminal"),
-                text("TERMINAL 2  ·  PIER B", 620, 70, "map-terminal"));
+                text("TERMINAL 1  ·  PIER A", 280, 312, "map-terminal"),
+                text("TERMINAL 3  ·  PIER C", 720, 312, "map-terminal"),
+                text("TERMINAL 2  ·  PIER B", 500, 28, "map-terminal"));
 
         // Gates
+        List<Node> gateLabels = new ArrayList<>(); // gate names, added to the map after the route layer
         // Nested loops: 3 piers (A, B, C) x 8 gates each = 24 gates (A1..A8, B1..B8, C1..C8).
         for (String pier : new String[]{"A", "B", "C"}) {
             for (int n = 1; n <= 8; n++) {
@@ -145,14 +150,18 @@ class WayfinderView extends HBox {
                 GateSlot s = GateMap.slot(g); // looks up the gate's door and box positions
                 Line stub = new Line(s.door().x(), s.door().y(), s.box().x(), s.box().y()); // link from corridor to gate
                 stub.getStyleClass().add("map-stub");
-                Rectangle box = rect(s.box().x() - 22, s.box().y() - 17, 44, 34, 8); // gate box centred on its position
+                Rectangle box = rect(s.box().x() - 22, s.box().y() - 17, 44, 34, 0); // square gate box centred on its position
                 box.getStyleClass().add("map-gate");
                 gateBoxes.put(g, box); // remember for highlighting later
-                map.getChildren().addAll(stub, box, text(g, s.box().x(), s.box().y() + 5, "map-gate-label"));
+                map.getChildren().addAll(stub, box);
+                Text label = text(g, s.box().x(), s.box().y() + 5, "map-gate-label");
+                gateLabels.add(label);
+                gateTexts.put(g, label); // remember so the target gate's text colour can change
             }
         }
 
         map.getChildren().add(routeLayer); // empty for now; update() fills it (added after gates so it draws on top)
+        map.getChildren().addAll(gateLabels); // gate names on top of the route line
 
         // "You are here" marker with pulse
         Circle pulse = new Circle(YOU().x(), YOU().y(), 10); // outer ring that grows and fades
@@ -209,6 +218,7 @@ class WayfinderView extends HBox {
 
         // Reset the previous route: remove old highlight, old shapes and stop old animations.
         gateBoxes.values().forEach(r -> r.getStyleClass().remove("map-gate-target"));
+        gateTexts.values().forEach(t -> t.getStyleClass().remove("map-gate-label-target"));
         routeLayer.getChildren().clear();
         if (dashAnim != null) dashAnim.stop();
         if (walker != null) walker.stop();
@@ -221,6 +231,7 @@ class WayfinderView extends HBox {
         }
 
         gateBoxes.get(target.gate()).getStyleClass().add("map-gate-target"); // highlight destination gate
+        gateTexts.get(target.gate()).getStyleClass().add("map-gate-label-target");
         List<Pt> pts = GateMap.route(target.gate()); // list of corner points from "you are here" to the gate
         Polyline line = new Polyline(); // the visible route (joined straight segments)
         Path path = new Path();         // the same points as a path for the walking dot to follow
@@ -265,7 +276,7 @@ class WayfinderView extends HBox {
 
     /** Small card with airline, flight number, destination, gate and status. */
     private Node summary(Flight f) {
-        HBox top = new HBox(10, Ui.airlineChip(f.airline()),
+        HBox top = new HBox(10, Ui.airlineLogo(f.airline()),
                 Ui.label(f.displayNumber() + "  ·  " + f.destination(), "detail-title"));
         top.setAlignment(Pos.CENTER_LEFT);
         HBox gate = new HBox(24, stat("GATE", f.gate(), f.terminal()), Ui.statusBadge(f.status()));

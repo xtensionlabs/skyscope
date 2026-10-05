@@ -68,20 +68,29 @@ class FlightTest {
     void delayMovesEstimateAndStatus() throws Exception {
         Flight f = make("KQ777", "A1");
         LocalDateTime before = f.estimatedTime();
-        f.delayByMinutes(30);
+        f.delayByMinutes(30, "Test reason");
         assertEquals(FlightStatus.DELAYED, f.status());
         assertEquals(before.plusMinutes(30), f.estimatedTime());
-        f.delayByMinutes(15);
+        f.delayByMinutes(15, "Test reason");
         assertEquals(before.plusMinutes(45), f.estimatedTime());
     }
 
     @Test
     void delayValidation() throws Exception {
         Flight f = make("KQ777", "A1");
-        assertThrows(InvalidFlightException.class, () -> f.delayByMinutes(0));
-        assertThrows(InvalidFlightException.class, () -> f.delayByMinutes(5000));
+        assertThrows(InvalidFlightException.class, () -> f.delayByMinutes(0, "Test reason"));
+        assertThrows(InvalidFlightException.class, () -> f.delayByMinutes(5000, "Test reason"));
+        // A reason is required
+        assertThrows(InvalidFlightException.class, () -> f.delayByMinutes(10, " "));
+        assertThrows(InvalidFlightException.class, () -> f.delayByMinutes(10, null));
+        // A boarding flight can still be delayed, and the reason is stored
         Flight boarding = TestData.flight("EK720");
-        assertThrows(InvalidFlightException.class, () -> boarding.delayByMinutes(10));
+        boarding.delayByMinutes(10, "Bad weather");
+        assertEquals(FlightStatus.DELAYED, boarding.status());
+        assertEquals("Bad weather", boarding.statusReason());
+        // Once the gate has closed it is too late to delay
+        Flight closed = TestData.flight("ET301");
+        assertThrows(InvalidFlightException.class, () -> closed.delayByMinutes(10, "Test reason"));
     }
 
     @Test
@@ -100,7 +109,7 @@ class FlightTest {
         Flight f = make("KQ777", "A1");
         f.cancel("Storm");
         assertEquals(FlightStatus.CANCELLED, f.status());
-        assertEquals("Storm", f.cancellationReason());
+        assertEquals("Storm", f.statusReason());
         assertThrows(InvalidFlightException.class, () -> f.cancel("again"));
     }
 
@@ -108,7 +117,7 @@ class FlightTest {
     void cancelWithoutReasonGetsDefault() throws Exception {
         Flight f = make("KQ777", "A1");
         f.cancel("  ");
-        assertFalse(f.cancellationReason().isBlank());
+        assertFalse(f.statusReason().isBlank());
     }
 
     @Test
@@ -122,7 +131,7 @@ class FlightTest {
         Flight f = make("KQ777", "A1");
         Flight.Snapshot before = f.snapshot();
         f.changeGate("A2");
-        f.delayByMinutes(20);
+        f.delayByMinutes(20, "Test reason");
         f.restore(before);
         assertEquals("A1", f.gate());
         assertEquals(FlightStatus.ON_TIME, f.status());

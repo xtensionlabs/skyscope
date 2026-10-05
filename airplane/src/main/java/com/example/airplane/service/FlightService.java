@@ -122,10 +122,10 @@ public class FlightService {
         fire(Type.STATUS_CHANGED, f, old.label());
     }
 
-    // Delays a flight by some minutes.
-    public void delay(Flight f, int minutes) throws FidsException {
+    // Delays a flight by some minutes and records why.
+    public void delay(Flight f, int minutes, String reason) throws FidsException {
         FlightStatus old = f.status();
-        f.delayByMinutes(minutes);
+        f.delayByMinutes(minutes, reason);
         fire(Type.DELAYED, f, old.label());
     }
 
@@ -173,14 +173,25 @@ public class FlightService {
 
     // Rule: no other active flight may use this gate within GATE_CONFLICT_MINUTES of this flight's time.
     private void ensureGateFree(String gate, Flight candidate) throws GateOccupiedException {
+        Flight holder = gateHolder(gate, candidate.scheduledTime(), candidate);
+        if (holder != null) throw new GateOccupiedException(gate, holder.displayNumber());
+    }
+
+    // Returns the flight that blocks this gate at the given time, or null when the gate is free.
+    private Flight gateHolder(String gate, LocalDateTime time, Flight ignore) {
         for (Flight other : flights.values()) {
-            // other != candidate compares object identity (skip the flight itself)
-            if (other != candidate && other.status().isActive() && other.gate().equals(gate)
-                    && Math.abs(Duration.between(other.scheduledTime(), candidate.scheduledTime()).toMinutes())
-                    < GATE_CONFLICT_MINUTES) {
-                throw new GateOccupiedException(gate, other.displayNumber());
+            // other != ignore compares object identity (skip the flight itself)
+            if (other != ignore && other.status().isActive() && other.gate().equals(gate)
+                    && Math.abs(Duration.between(other.scheduledTime(), time).toMinutes()) < GATE_CONFLICT_MINUTES) {
+                return other;
             }
         }
+        return null;
+    }
+
+    /** Gates that nobody else is using around the given departure time (so the UI only offers valid choices). */
+    public List<String> availableGates(LocalDateTime when, Flight ignore) {
+        return GateMap.allGates().stream().filter(g -> gateHolder(g, when, ignore) == null).toList();
     }
 
     // ---- staff commands with undo ------------------------------------------------------------

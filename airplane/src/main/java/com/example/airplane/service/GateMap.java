@@ -51,6 +51,15 @@ public final class GateMap {
         }
     }
 
+    /** Every gate on the map in order: A1..A8, B1..B8, C1..C8. */
+    public static List<String> allGates() {
+        List<String> gates = new ArrayList<>();
+        for (char pier : new char[]{'A', 'B', 'C'}) {
+            for (int n = 1; n <= 8; n++) gates.add(pier + String.valueOf(n));
+        }
+        return gates;
+    }
+
     /** Waypoints from the "You are here" marker to the gate's box. */
     public static List<Pt> route(String gate) {
         GateSlot s = slot(gate);

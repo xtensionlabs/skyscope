@@ -102,7 +102,8 @@
 /* departed or cancelled flights are faded out */
 .fids-table .table-row-cell.inactive-row .label { -fx-opacity: 0.5; }
 /* every cell: content aligned left with some padding */
-.fids-table .table-cell { -fx-alignment: CENTER-LEFT; -fx-padding: 0 0 0 10; -fx-background-color: transparent; -fx-text-fill: -text; }
+/* thin vertical rule at the right of every cell, like the grid lines of an old data table */
+.fids-table .table-cell { -fx-alignment: CENTER-LEFT; -fx-padding: 0 0 0 10; -fx-background-color: transparent; -fx-text-fill: -text; -fx-border-color: transparent #dcdcdc transparent transparent; -fx-border-width: 0 1 0 0; }
 /* table scroll bar: the draggable part, the track, and the arrow buttons */
 .fids-table .scroll-bar .thumb { -fx-background-color: #9aa0a6; -fx-background-radius: 0; }
 .fids-table .scroll-bar .track { -fx-background-color: #e4e4e4; }
@@ -119,19 +120,19 @@
 
 /* text styles for the different table cells */
 /* flight number */
-.cell-flight { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.cell-flight { -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: -text; }
 /* ordinary text such as airline name */
 .cell-text { -fx-font-size: 13px; -fx-text-fill: -text; }
 /* destination city */
 .cell-dest { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -text; }
 /* airport code such as NBO, small and grey */
-.cell-code { -fx-font-size: 11px; -fx-text-fill: -muted; -fx-font-weight: bold; }
+.cell-code { -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 12px; -fx-text-fill: -muted; -fx-font-weight: bold; }
 /* scheduled departure time (large) */
-.cell-time { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.cell-time { -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 19px; -fx-font-weight: bold; -fx-text-fill: -text; }
 /* new estimated time shown in red when delayed */
-.cell-est { -fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: -bad; }
+.cell-est { -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: -bad; }
 /* gates look like the black-and-yellow gate signs */
-.cell-gate { -fx-background-color: -sign; -fx-text-fill: -sign-text; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 2 10 2 10; -fx-min-width: 44; -fx-alignment: CENTER; }
+.cell-gate { -fx-font-family: "Consolas", "Courier New", monospace; -fx-background-color: -sign; -fx-text-fill: -sign-text; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 2 10 2 10; -fx-min-width: 44; -fx-alignment: CENTER; }
 
 /* pin button area: a 30x30 clickable square */
 .pin-hit { -fx-min-width: 30; -fx-min-height: 30; }
@@ -141,12 +142,12 @@
 .pin-on { -fx-icon-color: -bad; }
 
 /* small coloured box showing the airline code */
-.airline-chip { -fx-min-width: 34; -fx-min-height: 22; -fx-max-height: 22; -fx-background-radius: 2; }
+.airline-chip { -fx-min-width: 34; -fx-min-height: 22; -fx-max-height: 22; -fx-background-radius: 0; }
 .airline-chip-text { -fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: bold; }
 
 /* ---------- status badges: flat coloured plates ---------- */
 /* shared shape of every status badge */
-.badge { -fx-padding: 3 10 3 8; -fx-background-radius: 2; }
+.badge { -fx-padding: 3 10 3 8; -fx-background-radius: 0; -fx-border-color: rgba(0,0,0,0.45); -fx-border-width: 1; }
 .badge-text { -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: white; }
 .badge-icon { -fx-icon-color: white; }
 /* colour variants: green (ok), amber (warning), red (bad), grey (finished/inactive) */
@@ -186,11 +187,11 @@
 /* the big "Your Flight" card */
 .your-flight { -fx-background-color: white; -fx-border-color: -sign; -fx-border-width: 3; -fx-padding: 22 26 22 26; }
 /* very large flight number */
-.hero-number { -fx-font-size: 46px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.hero-number { -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 46px; -fx-font-weight: bold; -fx-text-fill: -text; }
 /* route text such as NAIROBI -> LONDON */
 .hero-dest { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -text; }
 /* large gate text */
-.hero-gate { -fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: -text; }
+.hero-gate { -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: -text; }
 /* thin grey horizontal line (a 1px high box) */
 .divider { -fx-background-color: #c9ccd0; -fx-min-height: 1; -fx-max-height: 1; }
 /* one countdown tile: dark gradient with a sharp change at 50% to imitate a split-flap display */
@@ -217,6 +218,8 @@
 .step-icon { -fx-icon-color: -route; }
 /* drop-down (ComboBox) styled like the classic buttons */
 .flight-picker { -fx-background-color: #7f7f7f, linear-gradient(to bottom, #fdfdfd, #dcdcdc); -fx-background-insets: 0, 1; -fx-background-radius: 3, 2; -fx-pref-height: 30; }
+/* the typing area of an editable drop-down (e.g. cancellation reason) blends into the box */
+.flight-picker .text-field { -fx-background-color: transparent; -fx-background-insets: 0; -fx-text-fill: black; }
 /* the text shown inside the closed drop-down */
 .flight-picker .list-cell { -fx-text-fill: black; -fx-background-color: transparent; }
 /* the pop-up list that opens from any drop-down: white with grey border */
@@ -227,29 +230,31 @@
 
 /* map shapes: -fx-fill is the inside colour, -fx-stroke is the outline colour (for shapes, not text boxes) */
 /* whole map background */
-.map-bg { -fx-fill: #eceff1; }
+.map-bg { -fx-fill: #f1efe6; -fx-stroke: #111111; -fx-stroke-width: 2; }
 /* walkways (piers) */
-.map-corridor { -fx-fill: white; -fx-stroke: #8a9097; }
+.map-corridor { -fx-fill: white; -fx-stroke: #333333; -fx-stroke-width: 1.5; }
 /* central plaza in the middle */
-.map-plaza { -fx-fill: #cfd8dc; -fx-stroke: #8a9097; }
+.map-plaza { -fx-fill: #d9d6c8; -fx-stroke: #333333; -fx-stroke-width: 1.5; }
 /* departures hall */
-.map-hall { -fx-fill: #cfd8dc; -fx-stroke: #8a9097; }
+.map-hall { -fx-fill: #d9d6c8; -fx-stroke: #333333; -fx-stroke-width: 1.5; }
 /* security, check-in zones, lounges */
-.map-facility { -fx-fill: #dfe3e6; -fx-stroke: #8a9097; }
+.map-facility { -fx-fill: #e6e3d6; -fx-stroke: #333333; -fx-stroke-width: 1; }
 /* a normal gate box */
-.map-gate { -fx-fill: white; -fx-stroke: -sign; -fx-stroke-width: 1.5; }
+.map-gate { -fx-fill: -sign; -fx-stroke: -sign; -fx-stroke-width: 1.5; }
 /* the gate of the chosen flight: filled yellow with a thick outline */
 .map-gate-target { -fx-fill: -sign-text; -fx-stroke: -sign; -fx-stroke-width: 3; }
 /* short line joining a gate box to the corridor door */
-.map-stub { -fx-stroke: #8a9097; -fx-stroke-width: 3; }
+.map-stub { -fx-stroke: #333333; -fx-stroke-width: 2; }
 /* gate name text such as A3 */
-.map-gate-label { -fx-fill: -sign; -fx-font-size: 13px; -fx-font-weight: bold; }
+.map-gate-label { -fx-fill: -sign-text; -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 14px; -fx-font-weight: bold; }
+/* text of the highlighted gate: dark on the yellow box */
+.map-gate-label-target { -fx-fill: -sign; }
 /* map text in three sizes: normal, small, extra small */
 .map-label { -fx-fill: -text; -fx-font-size: 15px; -fx-font-weight: bold; }
 .map-label-sm { -fx-fill: #4a5058; -fx-font-size: 11px; -fx-font-weight: bold; }
 .map-label-xs { -fx-fill: #4a5058; -fx-font-size: 10px; }
 /* terminal / pier names */
-.map-terminal { -fx-fill: -sign; -fx-font-size: 12px; -fx-font-weight: bold; }
+.map-terminal { -fx-fill: -sign; -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 12px; -fx-font-weight: bold; }
 /* the thick blue route line with rounded ends and corners */
 .map-route { -fx-stroke: -route; -fx-stroke-width: 6; -fx-stroke-line-cap: round; -fx-stroke-line-join: round; -fx-fill: transparent; }
 /* the small dot that walks along the route */

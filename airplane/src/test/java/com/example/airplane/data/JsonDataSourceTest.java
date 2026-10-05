@@ -39,7 +39,7 @@ class JsonDataSourceTest {
         JsonDataSource ds = new JsonDataSource(file);
         Snapshot s1 = ds.load();
         byId(s1, "KQ412").changeGate("A4");
-        byId(s1, "BA064").delayByMinutes(20);
+        byId(s1, "BA064").delayByMinutes(20, "Test reason");
         byId(s1, "EK720").cancel("Crew shortage");
         s1.bookings().get(0).checkIn();
         ds.save(s1);
@@ -47,7 +47,7 @@ class JsonDataSourceTest {
         Snapshot s2 = new JsonDataSource(file).load();
         assertEquals("A4", byId(s2, "KQ412").gate());
         assertEquals(FlightStatus.DELAYED, byId(s2, "BA064").status());
-        assertEquals("Crew shortage", byId(s2, "EK720").cancellationReason());
+        assertEquals("Crew shortage", byId(s2, "EK720").statusReason());
         Booking b = s2.bookings().get(0);
         assertTrue(b.isCheckedIn());
         assertEquals("B787-8", byId(s2, "BA064").aircraft().key());
