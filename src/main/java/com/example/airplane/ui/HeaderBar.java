@@ -44,8 +44,8 @@ class HeaderBar extends HBox {
         setPadding(new Insets(10, 18, 10, 18)); // top, right, bottom, left
 
         // Branding: two text lines stacked vertically...
-        VBox brand = new VBox(0, Ui.label("NAIROBI  ·  NBO", "brand-title"),
-                Ui.label("DEPARTURES INFORMATION", "brand-sub"));
+        VBox brand = new VBox(0, Ui.label("SKYSCOPE", "brand-title"),
+                Ui.label("NAIROBI  ·  NBO  ·  DEPARTURES", "brand-sub"));
         // ...placed next to a take-off icon.
         HBox logo = new HBox(14, Ui.icon("mdi2a-airplane-takeoff", 34, "brand-icon"), brand);
         logo.setAlignment(Pos.CENTER_LEFT);

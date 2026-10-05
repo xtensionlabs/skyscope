@@ -28,7 +28,7 @@ public class FidsApp extends Application {
         Scene scene = new Scene(controller.root(), w, h);
         // Let the controller attach CSS, keyboard shortcuts, the simulation and the clock.
         controller.start(scene);
-        stage.setTitle("NBO Departures – Flight Information Display");
+        stage.setTitle("Skyscope – NBO Flight Information Display");
         // Minimum window size so the layout cannot be squashed too small.
         stage.setMinWidth(Math.min(900, w));
         stage.setMinHeight(Math.min(560, h));

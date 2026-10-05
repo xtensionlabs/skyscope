@@ -23,12 +23,12 @@ Start the app with `./mvnw javafx:run`. To reset the demo data, close the app an
 
 ## 4. Staff mode (2 min)
 1. Click **Staff Login**, enter `staff123`. A **Staff Panel** tab appears.
-2. Change a gate to one already in use (for example change KQ 412 to `A3`): the **gate occupied** error shows.
-3. Change it to a free gate: the banner announces it on the board and the audit log records it.
-4. Delay a flight by 30 minutes: the board shows the new estimated time in red.
+2. Select a flight and open the **Change gate** drop-down: it lists only the gates that are free at that flight's time, so staff cannot pick an occupied gate.
+3. Choose a free gate and press **Change gate**: the banner announces it on the board and the audit log records it.
+4. Delay a flight: pick a reason (for example *Bad weather*) and a length (30 minutes). The board shows the new estimated time in red and the reason appears in the details drawer. A delay without a reason is refused.
 5. Cancel a flight with a reason: check the board row and its details drawer.
 6. Click **Undo last action** a few times and watch the board and audit log revert.
-7. Add a flight (for example `KQ777`, Kenya Airways, Cairo, `CAI`, a time, gate `C4`, a wide-body). Try a bad gate such as `Z9` to show validation.
+7. Add a flight: choose the airline, type the digits `777`, pick Cairo as the destination, choose a departure hour and minute, then a gate from the list of free gates and an aircraft type. Press **Add flight** with a field left empty to show the validation message.
 8. Switch the progression strategy between **Demo** and **Realistic**, pause and resume the simulation.
 
 ## 5. Accessibility and persistence (1 min)
