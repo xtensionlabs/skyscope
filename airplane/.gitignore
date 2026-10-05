@@ -1,0 +1,43 @@
+# Build output
+target/
+build/
+dist/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated
+.springBeans
+.sts4-cache
+nbproject/private/
+nbactions.xml
+nb-configuration.xml
+
+# AI assistant / tooling files
+.claude/
+CLAUDE.md
+graphify-out/
+.kotlin/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and temp files
+*.log
+*.tmp
+hs_err_pid*
+
+# Runtime data written by the app (saved flights/bookings)
+/data/

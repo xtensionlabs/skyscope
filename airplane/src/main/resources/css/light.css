@@ -1,0 +1,31 @@
+/* Airport signage palette: black + signal yellow on pale grey, flat and high contrast. */
+/* This file only defines the COLOUR VARIABLES (JavaFX "looked-up colours", names start with a dash). */
+/* base.css uses them like -bg or -sign, so changing a colour here changes it everywhere in the app. */
+.root {
+    /* page background (pale grey) */
+    -bg: #e4e7ea;
+    /* main panel / table background (white) */
+    -panel: #ffffff;
+    /* secondary panel background (light grey) */
+    -panel-2: #f0f0f0;
+    /* thin border lines */
+    -border: #b9bec4;
+    /* normal text colour (near black) */
+    -text: #111111;
+    /* less important, greyed-out text */
+    -muted: #5d656e;
+    -sign: #111111;            /* black sign background */
+    -sign-text: #ffd200;       /* signal yellow */
+    /* status colours: ok = green, warn = amber, bad = red */
+    -ok: #1b8a3a;
+    -warn: #f5a300;
+    -bad: #c62828;
+    /* blue used for the route line on the map and focus highlights */
+    -route: #0057b8;
+    /* every second table row (zebra stripe) */
+    -row-alt: #f3f4f5;
+    /* row when the mouse is over it (pale yellow) */
+    -row-hover: #fff6c2;
+    /* row of the pinned flight */
+    -pinned: #fff0a0;
+}

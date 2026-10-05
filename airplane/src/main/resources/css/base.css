@@ -1,0 +1,320 @@
+/* Classic airport information board: flat, square, black-and-yellow signage. */
+/* How to read this file: ".name" is a style class a Java node adds with getStyleClass().add("name"). */
+/* "-fx-..." are JavaFX CSS properties. Names like -bg, -sign, -text are colour variables defined in light.css. */
+
+/* .root is the top-most node of the scene, so these settings are inherited by everything. */
+.root {
+    /* default font for the whole app */
+    -fx-font-family: "Arial", "Helvetica", sans-serif;
+    /* default text size */
+    -fx-font-size: 13px;
+    /* page background colour */
+    -fx-background-color: -bg;
+    /* hide JavaFX's blue focus glow (we draw our own focus styles) */
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+/* every Label uses the normal text colour */
+.label { -fx-text-fill: -text; }
+/* the main window container */
+.app-root { -fx-background-color: -bg; }
+
+/* ---------- header sign ---------- */
+/* top bar: black background with a yellow line under it (border widths are top right bottom left) */
+.header-bar { -fx-background-color: -sign; -fx-border-color: -sign-text; -fx-border-width: 0 0 4 0; }
+/* app name in yellow */
+.brand-title { -fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: -sign-text; }
+/* small white subtitle under the app name */
+.brand-sub { -fx-font-size: 10px; -fx-text-fill: white; -fx-font-weight: bold; }
+/* logo icon colour (Ikonli font icons use -fx-icon-color) */
+.brand-icon { -fx-icon-color: -sign-text; }
+/* digital clock: monospace so digits do not jump around */
+.clock { -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: -sign-text; }
+/* date text under the clock */
+.clock-date { -fx-font-size: 10px; -fx-text-fill: white; -fx-font-weight: bold; }
+
+/* ---------- classic (old Java style) buttons ---------- */
+/* one shared look for all buttons: grey border layer + light gradient layer on top */
+.button, .toggle-button, .nav-tab, .action-button, .chip-button {
+    /* two background layers: a dark grey one (the border) and a gradient one (the face) */
+    -fx-background-color: #7f7f7f, linear-gradient(to bottom, #fdfdfd 0%, #dcdcdc 100%);
+    /* second layer is 1px smaller so the first shows as an outline */
+    -fx-background-insets: 0, 1;
+    /* rounded corners for each layer */
+    -fx-background-radius: 3, 2;
+    -fx-text-fill: black;
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+    /* space inside the button: top right bottom left */
+    -fx-padding: 5 14 5 12;
+    /* gap between icon and text */
+    -fx-graphic-text-gap: 6;
+    /* normal arrow cursor, not a hand */
+    -fx-cursor: default;
+    /* remove drop shadows */
+    -fx-effect: null;
+}
+/* mouse over: blue outline and pale blue face */
+.button:hover, .toggle-button:hover { -fx-background-color: #5a7fb5, linear-gradient(to bottom, #ffffff 0%, #e6eefa 100%); }
+/* pressed or switched on: darker, flipped gradient so it looks pushed in */
+.button:pressed, .toggle-button:pressed, .toggle-button:selected {
+    -fx-background-color: #6a6a6a, linear-gradient(to bottom, #c4c4c4 0%, #e2e2e2 100%);
+}
+/* icons inside buttons are dark grey */
+.button .ikonli-font-icon, .toggle-button .ikonli-font-icon { -fx-icon-color: #222222; }
+/* the currently open navigation tab is bold */
+.nav-tab:selected { -fx-font-weight: bold; }
+/* "primary" buttons (main action) have bold text */
+.action-button.primary { -fx-font-weight: bold; }
+
+/* ---------- departures board ---------- */
+/* plain page background for the board and scrolling pages (including the scroll viewport inside them) */
+.board, .lookup-scroll, .lookup-scroll > .viewport, .lookup-scroll > .viewport > StackPane { -fx-background-color: -bg; }
+/* remove the default border and padding around scroll panes */
+.scroll-pane { -fx-background-insets: 0; -fx-padding: 0; }
+/* big page heading */
+.board-title { -fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: -text; }
+/* small grey helper text under headings */
+.board-sub { -fx-font-size: 12px; -fx-text-fill: -muted; }
+
+/* the flights table: white body with a black border */
+.fids-table { -fx-background-color: -panel; -fx-border-color: -sign; -fx-border-width: 2; -fx-padding: 0; -fx-table-cell-border-color: transparent; -fx-background-insets: 0; }
+/* the strip behind the column titles is black */
+.fids-table .column-header-background { -fx-background-color: -sign; }
+/* each column header (and the empty filler at the right) is black and 36px high */
+.fids-table .column-header, .fids-table .filler { -fx-background-color: -sign; -fx-size: 36; -fx-border-color: transparent; }
+/* column title text: yellow, bold, left aligned */
+.fids-table .column-header .label { -fx-text-fill: -sign-text; -fx-font-size: 12px; -fx-font-weight: bold; -fx-alignment: CENTER-LEFT; }
+/* a normal row: white with a thin grey line underneath, 44px tall (matches setFixedCellSize(44) in Java) */
+.fids-table .table-row-cell { -fx-background-color: -panel; -fx-border-color: #d3d6da; -fx-border-width: 0 0 1 0; -fx-cell-size: 44; }
+/* zebra striping on odd rows */
+.fids-table .table-row-cell:odd { -fx-background-color: -row-alt; }
+/* row under the mouse */
+.fids-table .table-row-cell:hover { -fx-background-color: -row-hover; }
+/* selected rows keep the plain colour here (a later rule near the bottom overrides this) */
+.fids-table .table-row-cell:selected, .fids-table .table-row-cell:odd:selected { -fx-background-color: -panel; }
+/* empty filler rows below the last flight: plain, no lines */
+.fids-table .table-row-cell:empty { -fx-background-color: -panel; -fx-border-width: 0; }
+/* row whose detail drawer is open: highlighted with a thick left bar */
+.fids-table .table-row-cell.expanded-row { -fx-background-color: -row-hover; -fx-border-color: -sign; -fx-border-width: 0 0 1 4; }
+/* the pinned flight row is yellow */
+.fids-table .table-row-cell.pinned-row { -fx-background-color: -pinned; -fx-border-color: -sign; -fx-border-width: 0 0 1 0; }
+/* departed or cancelled flights are faded out */
+.fids-table .table-row-cell.inactive-row .label { -fx-opacity: 0.5; }
+/* every cell: content aligned left with some padding */
+.fids-table .table-cell { -fx-alignment: CENTER-LEFT; -fx-padding: 0 0 0 10; -fx-background-color: transparent; -fx-text-fill: -text; }
+/* table scroll bar: the draggable part, the track, and the arrow buttons */
+.fids-table .scroll-bar .thumb { -fx-background-color: #9aa0a6; -fx-background-radius: 0; }
+.fids-table .scroll-bar .track { -fx-background-color: #e4e4e4; }
+.fids-table .scroll-bar .increment-button, .fids-table .scroll-bar .decrement-button { -fx-background-color: #e4e4e4; -fx-padding: 2; }
+
+/* clickable column header used for sorting: hand cursor shows it can be clicked */
+.sort-header { -fx-cursor: hand; -fx-padding: 4 6 4 0; }
+/* the column name inside a sortable header */
+.sort-title { -fx-text-fill: -sign-text; -fx-font-size: 12px; -fx-font-weight: bold; }
+/* the small up/down sort arrow */
+.sort-arrow { -fx-icon-color: white; }
+/* the column currently being sorted is white and underlined */
+.sort-active .sort-title { -fx-text-fill: white; -fx-underline: true; }
+
+/* text styles for the different table cells */
+/* flight number */
+.cell-flight { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -text; }
+/* ordinary text such as airline name */
+.cell-text { -fx-font-size: 13px; -fx-text-fill: -text; }
+/* destination city */
+.cell-dest { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -text; }
+/* airport code such as NBO, small and grey */
+.cell-code { -fx-font-size: 11px; -fx-text-fill: -muted; -fx-font-weight: bold; }
+/* scheduled departure time (large) */
+.cell-time { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -text; }
+/* new estimated time shown in red when delayed */
+.cell-est { -fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: -bad; }
+/* gates look like the black-and-yellow gate signs */
+.cell-gate { -fx-background-color: -sign; -fx-text-fill: -sign-text; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 2 10 2 10; -fx-min-width: 44; -fx-alignment: CENTER; }
+
+/* pin button area: a 30x30 clickable square */
+.pin-hit { -fx-min-width: 30; -fx-min-height: 30; }
+/* pin icon when the flight is not pinned (grey) */
+.pin-off { -fx-icon-color: #9aa0a6; }
+/* pin icon when pinned (red) */
+.pin-on { -fx-icon-color: -bad; }
+
+/* small coloured box showing the airline code */
+.airline-chip { -fx-min-width: 34; -fx-min-height: 22; -fx-max-height: 22; -fx-background-radius: 2; }
+.airline-chip-text { -fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: bold; }
+
+/* ---------- status badges: flat coloured plates ---------- */
+/* shared shape of every status badge */
+.badge { -fx-padding: 3 10 3 8; -fx-background-radius: 2; }
+.badge-text { -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: white; }
+.badge-icon { -fx-icon-color: white; }
+/* colour variants: green (ok), amber (warning), red (bad), grey (finished/inactive) */
+.badge-ok { -fx-background-color: -ok; }
+.badge-warn { -fx-background-color: -warn; }
+/* white text is hard to read on amber, so use black */
+.badge-warn .badge-text { -fx-text-fill: black; }
+.badge-warn .badge-icon { -fx-icon-color: black; }
+.badge-bad { -fx-background-color: -bad; }
+.badge-muted { -fx-background-color: #6f767d; }
+
+/* ---------- detail drawer ---------- */
+/* the sliding box under the table that shows more flight details */
+.detail-wrap { -fx-background-color: -panel; }
+/* inner content: pale yellow with a black border on left, right and bottom */
+.detail-content { -fx-padding: 0 20 0 20; -fx-background-color: #fffbe0; -fx-border-color: -sign; -fx-border-width: 0 2 2 2; }
+/* heading of a card */
+.detail-title { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -text; }
+/* small grey caption above a value, e.g. TERMINAL */
+.detail-caption { -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: -muted; }
+/* the value under a caption */
+.detail-value { -fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: -text; }
+
+/* ---------- lookup ---------- */
+/* the search bar box: white with black border */
+.search-bar { -fx-background-color: white; -fx-border-color: -sign; -fx-border-width: 2; -fx-padding: 6 8 6 12; }
+.search-icon { -fx-icon-color: -muted; }
+/* the text box itself has no own background so it blends into the bar */
+.search-field { -fx-background-color: transparent; -fx-text-fill: -text; -fx-prompt-text-fill: #8a9097; -fx-font-size: 16px; -fx-padding: 4; }
+/* keep it transparent when focused (removes the default focus ring) */
+.search-field:focused { -fx-background-color: transparent; -fx-background-insets: 0; }
+/* the word TRY / ALSO BOOKED next to the example buttons */
+.hint-caption { -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: -muted; }
+/* small example buttons (overrides the bigger shared button padding and size) */
+.chip-button { -fx-font-size: 11px; -fx-padding: 2 8 2 8; }
+
+/* the big "Your Flight" card */
+.your-flight { -fx-background-color: white; -fx-border-color: -sign; -fx-border-width: 3; -fx-padding: 22 26 22 26; }
+/* very large flight number */
+.hero-number { -fx-font-size: 46px; -fx-font-weight: bold; -fx-text-fill: -text; }
+/* route text such as NAIROBI -> LONDON */
+.hero-dest { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -text; }
+/* large gate text */
+.hero-gate { -fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: -text; }
+/* thin grey horizontal line (a 1px high box) */
+.divider { -fx-background-color: #c9ccd0; -fx-min-height: 1; -fx-max-height: 1; }
+/* one countdown tile: dark gradient with a sharp change at 50% to imitate a split-flap display */
+.flap { -fx-background-color: linear-gradient(to bottom, #2a2a2a 0%, #111111 49%, #000000 51%, #1c1c1c 100%); -fx-background-radius: 3; -fx-min-width: 42; -fx-min-height: 60; -fx-max-width: 42; -fx-max-height: 60; }
+/* the yellow digit on a tile */
+.flap-text { -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: -sign-text; }
+/* the black line across the middle of a tile */
+.flap-seam { -fx-stroke: black; -fx-stroke-width: 2; }
+/* the ":" between countdown tiles */
+.flap-colon { -fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: -text; }
+/* "no result" message box */
+.empty-card { -fx-background-color: white; -fx-border-color: -border; -fx-border-width: 1; -fx-padding: 40; }
+.empty-icon { -fx-icon-color: -muted; }
+.empty-title { -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: -text; }
+
+/* ---------- wayfinding ---------- */
+/* background of the map page and the area around the map */
+.wayfinder, .map-holder { -fx-background-color: -bg; }
+/* right-hand info panel: white with a black line on its left edge */
+.side-panel { -fx-background-color: white; -fx-border-color: -sign; -fx-border-width: 0 0 0 2; }
+/* small summary card in the side panel */
+.mini-card { -fx-background-color: -panel-2; -fx-border-color: -border; -fx-padding: 12; }
+/* icons beside the walking directions are blue */
+.step-icon { -fx-icon-color: -route; }
+/* drop-down (ComboBox) styled like the classic buttons */
+.flight-picker { -fx-background-color: #7f7f7f, linear-gradient(to bottom, #fdfdfd, #dcdcdc); -fx-background-insets: 0, 1; -fx-background-radius: 3, 2; -fx-pref-height: 30; }
+/* the text shown inside the closed drop-down */
+.flight-picker .list-cell { -fx-text-fill: black; -fx-background-color: transparent; }
+/* the pop-up list that opens from any drop-down: white with grey border */
+.combo-box-popup > .list-view { -fx-background-color: white; -fx-border-color: #7f7f7f; }
+.combo-box-popup .list-cell { -fx-background-color: white; -fx-text-fill: black; }
+/* highlight the item under the mouse */
+.combo-box-popup .list-cell:hover { -fx-background-color: -row-hover; }
+
+/* map shapes: -fx-fill is the inside colour, -fx-stroke is the outline colour (for shapes, not text boxes) */
+/* whole map background */
+.map-bg { -fx-fill: #eceff1; }
+/* walkways (piers) */
+.map-corridor { -fx-fill: white; -fx-stroke: #8a9097; }
+/* central plaza in the middle */
+.map-plaza { -fx-fill: #cfd8dc; -fx-stroke: #8a9097; }
+/* departures hall */
+.map-hall { -fx-fill: #cfd8dc; -fx-stroke: #8a9097; }
+/* security, check-in zones, lounges */
+.map-facility { -fx-fill: #dfe3e6; -fx-stroke: #8a9097; }
+/* a normal gate box */
+.map-gate { -fx-fill: white; -fx-stroke: -sign; -fx-stroke-width: 1.5; }
+/* the gate of the chosen flight: filled yellow with a thick outline */
+.map-gate-target { -fx-fill: -sign-text; -fx-stroke: -sign; -fx-stroke-width: 3; }
+/* short line joining a gate box to the corridor door */
+.map-stub { -fx-stroke: #8a9097; -fx-stroke-width: 3; }
+/* gate name text such as A3 */
+.map-gate-label { -fx-fill: -sign; -fx-font-size: 13px; -fx-font-weight: bold; }
+/* map text in three sizes: normal, small, extra small */
+.map-label { -fx-fill: -text; -fx-font-size: 15px; -fx-font-weight: bold; }
+.map-label-sm { -fx-fill: #4a5058; -fx-font-size: 11px; -fx-font-weight: bold; }
+.map-label-xs { -fx-fill: #4a5058; -fx-font-size: 10px; }
+/* terminal / pier names */
+.map-terminal { -fx-fill: -sign; -fx-font-size: 12px; -fx-font-weight: bold; }
+/* the thick blue route line with rounded ends and corners */
+.map-route { -fx-stroke: -route; -fx-stroke-width: 6; -fx-stroke-line-cap: round; -fx-stroke-line-join: round; -fx-fill: transparent; }
+/* the small dot that walks along the route */
+.map-walker { -fx-fill: white; -fx-stroke: -route; -fx-stroke-width: 3; }
+/* red "You are here" dot, its pulsing ring, and its label */
+.map-you { -fx-fill: #d32f2f; -fx-stroke: white; -fx-stroke-width: 3; }
+.map-you-pulse { -fx-fill: #d32f2f; }
+.map-you-label { -fx-fill: #d32f2f; -fx-font-size: 13px; -fx-font-weight: bold; }
+
+/* ---------- announcement banner ---------- */
+/* yellow bar with black border for announcements */
+.banner { -fx-background-color: -sign-text; -fx-border-color: -sign; -fx-border-width: 3; -fx-padding: 10 24 10 16; }
+.banner-title { -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: -sign; }
+.banner-message { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -sign; }
+.banner-icon { -fx-icon-color: -sign; }
+
+/* ================= Additions: staff panel, boarding pass, live indicator, selection, accessibility ================= */
+/* selected row (chosen with keyboard or mouse): yellow highlight with left bar; this later rule wins over the earlier :selected rule */
+.fids-table .table-row-cell:selected, .fids-table .table-row-cell:odd:selected { -fx-background-color: -row-hover; -fx-border-color: -sign; -fx-border-width: 0 0 1 4; }
+/* when the table has keyboard focus the selected row is a stronger yellow */
+.fids-table:focused .table-row-cell:selected { -fx-background-color: -pinned; }
+/* green dot and "LIVE" text that show the board is updating */
+.live-dot { -fx-fill: -ok; }
+.live-text { -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: -ok; }
+/* white boxes on the staff panel */
+.admin-card { -fx-background-color: white; -fx-border-color: -sign; -fx-border-width: 2; -fx-padding: 14; }
+/* text boxes in forms: square grey outline, turns blue when focused */
+.form-field { -fx-background-color: white; -fx-border-color: #7f7f7f; -fx-border-width: 1; -fx-background-radius: 0; -fx-padding: 4 6 4 6; -fx-text-fill: -text; }
+.form-field:focused { -fx-border-color: -route; }
+/* audit log list: monospace small text, with zebra stripes */
+.audit-list { -fx-background-color: white; -fx-border-color: #7f7f7f; -fx-font-family: "Consolas", "Courier New", monospace; -fx-font-size: 11px; }
+.audit-list .list-cell { -fx-background-color: white; -fx-text-fill: -text; }
+.audit-list .list-cell:odd { -fx-background-color: -row-alt; }
+/* success message (green) and error message (red) */
+.notice { -fx-text-fill: -ok; -fx-font-weight: bold; -fx-font-size: 13px; }
+.notice-error { -fx-text-fill: -bad; -fx-font-weight: bold; -fx-font-size: 13px; }
+/* boarding pass: pale yellow with a dashed border (dash 6px, gap 4px) like a tear-off ticket */
+.boarding-pass { -fx-background-color: #fffbe0; -fx-border-color: -sign; -fx-border-width: 2; -fx-border-style: segments(6, 4); -fx-padding: 14 18 14 18; }
+.pass-title { -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: -muted; }
+.pass-name { -fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: -text; }
+/* one black stripe of the fake barcode */
+.barcode-bar { -fx-fill: black; }
+/* hover tooltips: black with white text */
+.tooltip { -fx-background-color: -sign; -fx-text-fill: white; -fx-font-size: 12px; -fx-background-radius: 2; }
+
+/* High contrast: pure black/white/yellow, thick borders */
+/* applies when the Java code adds the "high-contrast" class to the root; it redefines the colour variables */
+.root.high-contrast { -bg: #ffffff; -panel: #ffffff; -panel-2: #ffffff; -border: #000000; -text: #000000; -muted: #000000; -sign: #000000; -sign-text: #ffff00; -ok: #005a00; -warn: #ffd400; -bad: #a80000; -route: #0000cc; -row-alt: #ffffff; -row-hover: #ffff99; -pinned: #ffff66; }
+/* black lines between table rows */
+.root.high-contrast .fids-table .table-row-cell { -fx-border-color: #000000; }
+/* buttons become black outline on white */
+.root.high-contrast .button, .root.high-contrast .toggle-button { -fx-background-color: #000000, #ffffff; }
+/* thicker black outlines on map areas */
+.root.high-contrast .map-corridor, .root.high-contrast .map-plaza, .root.high-contrast .map-hall { -fx-stroke: black; -fx-stroke-width: 2; }
+
+/* Larger text */
+/* applies when the "large-text" class is on the root; each rule below makes one kind of text bigger */
+.root.large-text { -fx-font-size: 16px; }
+.root.large-text .cell-flight, .root.large-text .cell-dest { -fx-font-size: 18px; }
+.root.large-text .cell-text { -fx-font-size: 16px; }
+.root.large-text .cell-time, .root.large-text .cell-gate { -fx-font-size: 21px; }
+.root.large-text .cell-code, .root.large-text .cell-est { -fx-font-size: 14px; }
+.root.large-text .badge-text { -fx-font-size: 13px; }
+.root.large-text .board-title { -fx-font-size: 28px; }
+.root.large-text .board-sub, .root.large-text .sort-title, .root.large-text .fids-table .column-header .label { -fx-font-size: 14px; }
+.root.large-text .detail-value { -fx-font-size: 20px; }
+.root.large-text .detail-caption, .root.large-text .hint-caption { -fx-font-size: 12px; }
+.root.large-text .button, .root.large-text .toggle-button { -fx-font-size: 14px; }
