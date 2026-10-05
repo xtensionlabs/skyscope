@@ -45,8 +45,22 @@ Everything runs locally: no database or internet connection is needed. The demo 
    mvnw.cmd test                # 65 JUnit 5 tests
    ```
 
-**Using an IDE (IntelliJ IDEA):** open the `skyscope` folder as a Maven project, wait for the dependencies to
-download, then open `FidsApp.java` and click the green run arrow next to `main`.
+**Using an IDE:** the project is a standard Maven project, so any of these IDEs can open it. In every IDE, make
+sure the project uses JDK 17 or newer. The simplest reliable way to start the app is to run the Maven goal
+`javafx:run` (the same thing the terminal command does).
+
+- **IntelliJ IDEA:** *File → Open*, choose the `skyscope` folder (the one with `pom.xml`) and let it import as a
+  Maven project. Wait for the dependencies to download, then open `FidsApp.java` and click the green run arrow next
+  to `main`. If that fails, open the **Maven** panel and run *Plugins → javafx → javafx:run*.
+- **Eclipse:** use *Eclipse IDE for Java Developers* (Maven support is built in). Choose *File → Import → Maven →
+  Existing Maven Projects*, select the `skyscope` folder and finish. Then right-click the project and choose
+  *Run As → Maven build…*, type `javafx:run` in the **Goals** box, and click **Run**. Eclipse remembers this, so next
+  time use *Run As → Maven build* again.
+- **Apache NetBeans:** *File → Open Project*, choose the `skyscope` folder (NetBeans shows Maven projects with a
+  special icon). Right-click the project and choose *Run Maven → Goals…*, type `javafx:run`, and click **OK**.
+  You can tick **Remember as** to save it for next time.
+
+The first run in any IDE downloads the libraries, so keep your internet connection on until the window opens.
 
 **Staff login:** open the Staff screen and use the demo password `staff123`.
 
@@ -60,6 +74,8 @@ launch. This also happens automatically if every flight in the saved file has al
 - *Maven cannot download dependencies:* check your internet connection and run the command again.
 - *The window does not appear:* make sure you ran `javafx:run`, not plain `java -jar`, because JavaFX is not bundled
   into a single jar.
+- *"JavaFX runtime components are missing" when pressing Run in Eclipse or NetBeans:* run the Maven goal
+  `javafx:run` as described above instead of the plain Java run button.
 
 ## Features
 
