@@ -168,9 +168,4 @@ The UI is JavaFX. The views are **built in Java code** (no FXML), and the look c
 
 ---
 
-## Checklist for the night before
-- [ ] Everyone runs `mvnw.cmd javafx:run` once on their own laptop (first run needs internet to download libraries).
-- [ ] Run `mvnw.cmd test` once and note that all 65 tests pass.
-- [ ] Delete the `data/` folder before presenting so the demo starts from fresh data.
-- [ ] Each person opens their files in the IDE ahead of time, in the order above.
-- [ ] Practise the hand-offs between presenters (see the demo trigger points under Person 3).
+
