@@ -145,55 +145,63 @@ find their gate. Staff change gates, delay or cancel flights, add flights and un
 
 ---
 
-## 5. What you can do in the app, and what happens (handy during the demo)
+## 5. What happens in the code when you use the app (handy during the demo)
+
+**The pattern behind almost every action:** a view's click handler calls a method on `FidsController`. The controller
+either changes `AppState` or asks `FlightService` to do the work. `FlightService` checks the rules, changes the
+`Flight`, saves to JSON and fires a `FlightEvent`. The controller hears that event (Observer) and calls `refresh()`,
+which redraws every screen from the latest data. The views never change data themselves.
 
 ### Departures board
-| Action | What happens, in plain words | Concepts |
-|---|---|---|
-| Click the TIME / GATE / STATUS header | The flights re-order by that column. Click the same header again and the order flips. Each column knows how to compare two flights, so the board just asks it. | `Comparator` inside the `SortKey` enum (Strategy), streams, `TableView` |
-| Click a flight row | A drawer slides open under the row with terminal, check-in counter, baggage belt and aircraft. Click again and it slides shut. | Click handler (lambda), `Timeline` animation, `AppState` |
-| Pin a flight | That flight jumps to the top and stays there whatever you sort by, until you unpin it. | `AppState` property → `refresh()` |
-| Use the keyboard (arrows, Enter, P, R) | Arrows move between rows, Enter opens the drawer, P pins, R shows the route, so the board works without a mouse. | Key event handlers, `KeyCode` |
-| Watch the board on its own | Every 12 seconds the simulator moves one flight along (for example to Boarding). The status badge pops and the row flashes, with no click needed. | `SimulationService`, `Timeline`, `ScaleTransition` |
-| A gate changes or a flight is delayed or cancelled | A yellow banner slides down from the top. Gate changes and cancellations show for everyone; a delay or a boarding call shows only if you pinned that flight. | Observer: `FlightEvent` → `Notification.from()` → `BannerView` |
+| Action | What happens in the code |
+|---|---|
+| Click the TIME / GATE / STATUS header | The header's click handler calls `controller.sortBy(key)`. The controller updates `state.sortKey` (or flips `state.ascending` if it's the same column). Changing a property triggers `refresh()`, which calls `boardRows()`. That takes the comparator stored inside the chosen `SortKey` enum constant and sorts the flights with a stream. `board.update()` then redraws the table. |
+| Click a flight row | The row's click handler calls `controller.onRowClicked(id)`. This sets `state.expandedFlightId` and `state.selectedFlightId` inside `batch(...)`, so the screen redraws once. `refresh()` passes the expanded flight to `BoardView.update()`, which runs a `Timeline` that grows the drawer's height from 0 to full size. Clicking again sets the id to null and the drawer shrinks. |
+| Pin a flight (pin icon or P key) | The click or key handler calls `controller.togglePin(id)`, which sets `state.pinnedFlightId` (or clears it if it was already pinned). `refresh()` runs `boardRows()` again, and its sort puts the pinned id first before applying the normal order. The pin lives only in `AppState`, so it is not saved to the file. |
+| Arrow keys, Enter, P, R | `table.setOnKeyPressed` reads the `KeyCode`. Arrows are handled by `TableView` itself. Enter or Space calls `onRowClicked`, P calls `togglePin`, R calls `showRoute`. `e.consume()` tells JavaFX the key is handled. |
+| The board changes by itself | `SimulationService` has a `Timeline` that calls `tick()` every 12 seconds. `tick()` takes the active flights, asks the current `StatusTransitionStrategy` what the next status should be, and calls `service.moveStatus()` (or `service.delay()`). `FlightService` then calls `flight.moveTo()`, saves, and fires a `FlightEvent`. `FidsController.onFlightEvent()` runs, sets `flashId` and calls `refresh()`, so the changed row's badge pops. |
+| A banner slides in | `onFlightEvent()` passes the event to `Notification.from(e)`, a factory that returns a `GateChangeNotification`, `DelayNotification`, `CancellationNotification` or `BoardingCallNotification` (or nothing). The controller keeps it if `isBroadcast()` is true or it's the pinned flight, then calls `banner.show(n.heading(), n.body())`. `BannerView` plays slide, wait 6 seconds, slide out. |
 
 ### My Flight (search and check-in)
-| Action | What happens, in plain words | Concepts |
-|---|---|---|
-| Type a flight number or booking reference (e.g. `BK7F3A`) and search | The app first tries it as a flight number; if that fails it tries it as a booking reference and finds that booking's flight. Spaces and lower case don't matter. | `FlightService.lookup()`, `Optional` |
-| Search something that doesn't exist | A friendly "not found" message is shown instead of a crash. | `FlightNotFoundException` caught and shown |
-| Look at the result card | You see the airline, status, gate, seat and a countdown (HH:MM:SS) that ticks every second until departure. | Controller clock `Timeline`, `Duration` |
-| Click an "ALSO BOOKED" chip | The search runs again for the passenger's other booking. | Event handler, `bookingsOf()` |
-| Click Check in | The booking is marked checked in and a boarding pass with a barcode appears. Check-in is refused once the gate has closed or the flight has left. | `Booking.checkIn()`, `Flight.canCheckIn()`, exceptions |
-| Check in the same booking twice | The second attempt is refused with a message. | `BookingAlreadyCheckedInException` |
+| Action | What happens in the code |
+|---|---|
+| Search a flight number or booking reference | Enter or the Search button calls `controller.search(text)`, which sets `state.lookupQuery`. `refresh()` then calls `service.lookup(q)`. That cleans the text (`normalise`: remove spaces, upper-case), tries it as a flight id in the map, and if that fails loops through the bookings to match a reference and returns its flight. `refresh()` also calls `bookingMatching()` and `bookingsOf()`, then passes everything to `lookup.update()`, which builds the card. |
+| Search something that doesn't exist | `service.lookup()` throws `FlightNotFoundException`. `refresh()` catches it and leaves `found` as null. `LookupView` sees no result and builds the "not found" message instead of a card. |
+| The countdown ticks | The controller owns a 1-second `Timeline`. Each tick calls `lookup.tick()`, which uses `Ui.countdown()` on the flight's estimated time and writes the digits into the six tile labels. |
+| Check in | The Check in button calls `controller.checkIn(reference)`, which calls `service.checkIn()`. The service finds the booking, gets its flight, checks `flight.canCheckIn()`, then calls `booking.checkIn()` and fires an event. The controller stores a success message (or `e.getMessage()` if a `FidsException` was thrown) in `lookupNotice` and calls `refresh()`. |
+| Check in twice | `Booking.checkIn()` sees `checkedIn` is already true and throws `BookingAlreadyCheckedInException`. It travels up through `FlightService` to the controller's `catch (FidsException e)`, and its message is shown on the card. |
+| Click an "ALSO BOOKED" chip | The handler puts the other reference in the search box and calls `controller.search()`, so it is just a new search. |
 
 ### Route to gate (map)
-| Action | What happens, in plain words | Concepts |
-|---|---|---|
-| Click "Route to gate" (or press R) | The map screen opens and a dashed line animates from "You are here" through security and the plaza to the gate, with walking time and directions. | `GateMap.route()`, `Polyline`, `Timeline` |
-| Pick another flight in the side drop-down | The route redraws to the new gate. | `ComboBox`, listener |
+| Action | What happens in the code |
+|---|---|
+| Route to gate button (or R) | The handler calls `controller.showRoute(id)`, which sets `selectedFlightId` and `state.screen = MAP` in one `batch`. `refresh()` calls `routeTarget()` and then `wayfinder.update(target, flights)`. |
+| The route is drawn | `WayfinderView.update()` calls `GateMap.route(gate)`, which returns the corner points (You are here → security → plaza → corridor → gate). The view puts them into a `Polyline` for the dashed line and a `Path` for the walking dot. One `Timeline` slides the dash offset so the dashes flow, and a `PathTransition` moves a `Circle` along the path. |
+| Walking time and distance | `GateMap.lengthMetres()` adds up the distance between points with `Math.hypot`. The view divides by the walking speed to get minutes. |
+| Pick another flight in the drop-down | The `ComboBox` listener calls `controller.selectFlight(id)`, which sets `selectedFlightId` and triggers `refresh()`. The `updating` flag stops the listener firing when the code sets the picker itself. |
 
 ### Staff mode (login with `staff123`)
-| Action | What happens, in plain words | Concepts |
-|---|---|---|
-| Staff Login | A dialog asks for the password. If it's right, a Staff Panel tab appears; if not, a "login failed" banner shows. Logout hides the tab again. | `Dialog`, `PasswordField`, `AppState.staffMode` |
-| Change gate | The drop-down only lists gates that are free around that flight's departure time, so you can't pick a taken one. Everyone sees a banner and it's written in the audit log. | Command pattern, `GateOccupiedException`, Observer |
-| Delay a flight | You choose a length and a reason. The estimated time moves later and shows in red on the board. A delay with no reason is refused. | `Flight.delayByMinutes()`, `InvalidFlightException` |
-| Cancel a flight | You give a reason (or a default is used). The flight shows Cancelled and cannot be changed any more. | `Flight.cancel()`, final status in `FlightStatus` |
-| Set a status | A staff override: forces a flight into any status you pick, skipping the normal order. (The simulator and normal moves do follow the legal order, e.g. On Time → Boarding → Gate Closed → Departed.) | `SetStatusCommand`, `FlightStatus.nextStatuses()` (polymorphism) |
-| Add a flight | You fill in a form (airline, number, destination, time, gate, aircraft). Bad input such as a wrong number or a taken gate is rejected with a message; otherwise the flight appears on the board. | `AddFlightCommand`, validation in the `Flight` constructor |
-| Undo last action | Reverses the latest staff action, whether a delay, cancel, gate change or an added flight, and logs it. Press again to go back further. | `Deque` stack, Memento `snapshot()` / `restore()` |
-| Read the audit log | Every staff and simulator action is listed with time and who did it. | `AuditEntry` record |
-| Switch Demo / Realistic | Realistic follows the real clock (boarding 25 min before departure). Demo moves flights along quickly so the board is always busy. | Strategy pattern |
-| Pause / resume simulation, or trigger a gate change | Stops or restarts the 12-second timer. The trigger button moves a random flight to a free gate right now. | `Timeline.pause()` / `play()`, `triggerGateChange()` |
+| Action | What happens in the code |
+|---|---|
+| Staff Login | The button calls `controller.staffButtonPressed()`, which builds a `Dialog` with a `PasswordField` and waits with `showAndWait()`. A correct password sets `state.staffMode = true` and switches to the ADMIN screen. `HeaderBar.update()` shows the Staff Panel tab only while `staffMode` is true. A wrong one calls `banner.show("LOGIN FAILED", ...)`. |
+| Any staff button (the common path) | The handler calls `withSelected(f -> new XCommand(...))`. That builds an `AdminCommand` for the selected flight and calls `controller.runStaff(cmd)`, then `service.execute(cmd, "STAFF")`. The service runs `cmd.execute()`, pushes it on the `history` stack, and writes `describe()` to the audit log. If anything throws a `FidsException`, the controller returns the message to show. `finally` always calls `refresh()`. |
+| Change gate | Builds a `ChangeGateCommand`, whose `apply()` calls `service.changeGate()`. That checks the gate name, calls `ensureGateFree()` (loops over active flights, throws `GateOccupiedException` if one is within 40 minutes), calls `flight.changeGate()`, and fires a `GATE_CHANGED` event, which causes the banner. The gate drop-down is filled by `service.availableGates()`, so occupied gates are never offered. |
+| Delay | Builds a `DelayCommand`. `service.delay()` calls `flight.delayByMinutes()`, which rejects 0 or over 720 minutes, a blank reason, or a status that can't be delayed (all `InvalidFlightException`). Otherwise it adds the minutes to `estimatedTime`, stores the reason and sets the status to `DELAYED`. The view also checks for a blank reason before building the command. |
+| Cancel | Builds a `CancelCommand`. `flight.cancel()` refuses if the flight is already departed or cancelled, uses "Operational reasons." if the reason is blank, and sets `CANCELLED`. `CANCELLED.nextStatuses()` is empty, so `moveTo()` can't move it out of that state. |
+| Force status | Builds a `SetStatusCommand`, which calls `service.forceStatus()` → `flight.forceStatus()`. That skips the `nextStatuses()` check, which is why it's an override. |
+| Add a flight | `AdminView.addFlight()` reads the form and does `new Flight(...)`, so the constructor's validation runs (flight number regex, gate regex, null checks). It wraps the flight in an `AddFlightCommand`; `service.addFlight()` rejects duplicate ids and taken gates, puts it in the map, and fires `ADDED`. |
+| Undo | The button calls `controller.undoStaff()` → `service.undoLast()`. It pops the newest command off the `Deque` and calls `cmd.undo()`. For flight commands, `FlightCommand.undo()` calls `service.restore(flight, before)`, which applies the saved `Snapshot` (Memento). For `AddFlightCommand`, undo calls `removeFlight()`. The undo is logged as "UNDO: ...". |
+| Audit log | `service.record(actor, text)` adds an `AuditEntry`. `refresh()` passes `service.auditLog()` (a reversed copy, so newest first) to `admin.update()`. |
+| Switch Demo / Realistic | The strategy `ComboBox` handler calls `simulation.setStrategy(...)`. The next `tick()` calls `strategy.next()` on the new object. The simulation only knows the interface, so no other code changes. |
+| Pause or resume, trigger gate change | The toggle calls `simulation.setRunning()`, which does `timeline.play()` or `pause()`. The trigger button calls `triggerGateChange()`, which picks a random flight that `canChangeGate()` and tries up to 10 random gates on its pier through `service.changeGate()`. |
 
 ### Everywhere
-| Action | What happens, in plain words | Concepts |
-|---|---|---|
-| Ctrl+F, Ctrl+1 to 4 | Jump to search, board, search again, map and staff screens. Ctrl+4 works only when logged in as staff. | `scene.getAccelerators()`, `KeyCombination` |
-| Switch screen with the top tabs | One screen is shown and the others are hidden, with a short fade. | `StackPane`, `FadeTransition` |
-| Aa (large text) / HC (high contrast) | The whole app grows its text or switches to strong colours. Only a CSS class is added; no screen is rebuilt. | CSS class on the root node |
-| Close and reopen the app | The flights are where you left them: statuses, gates, delays and check-ins (the pin is not saved). If the file is missing or broken, the app starts with sample data instead. | `FlightDataSource`, `JsonDataSource` + Gson, try-with-resources |
+| Action | What happens in the code |
+|---|---|
+| Ctrl+F, Ctrl+1 to 4 | `controller.start()` registers each combination with `scene.getAccelerators()`. Each one runs a lambda that calls `showScreen(...)`. Ctrl+4 first checks `state.staffMode`. |
+| Switch screens with the tabs | A tab click calls `controller.showScreen(s)`, which sets `state.screen`. `showScreen()` inside `refresh()` sets `setVisible/setManaged` so only one screen in the `StackPane` shows, then plays a 220 ms `FadeTransition`. |
+| Aa / HC buttons | Call `toggleLargeText()` / `toggleHighContrast()`, which flip a `BooleanProperty`. `refresh()` calls `applyDisplayModes()`, which adds or removes the `large-text` / `high-contrast` class on the root, and the CSS does the rest. |
+| Close and reopen | `FidsApp.stop()` calls `controller.stop()`, which stops the simulation and calls `service.persist()`. `FlightService` also saves after every change. On the next start, `createService()` builds a `JsonDataSource`; `load()` reads the file with Gson, rebuilds `Flight` and `Booking` objects, and shifts every time forward by the time that has passed. If the file is missing it is created from `SampleData`; if it is broken, `createService()` falls back to the in-memory `FlightRepository`. |
 
 ---
 
