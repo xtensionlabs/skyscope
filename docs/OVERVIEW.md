@@ -22,12 +22,12 @@ find their gate. Staff change gates, delay or cancel flights, add flights and un
 
 ## 1. The four OOP pillars
 
-| Pillar | What it means | Where we used it |
+| Pillar | What it means | Project implementation |
 |---|---|---|
-| **Encapsulation** | Private fields, access only through methods | `Flight`: every field is private and changes only through `changeGate()`, `delayByMinutes()`, `cancel()`. The constructor validates, so an invalid Flight can't exist. |
-| **Inheritance** | A child class reuses and extends a parent | `Aircraft` -> `NarrowBody`, `WideBody`, `RegionalJet`. `FidsException` -> 5 exceptions. `AdminCommand` -> `FlightCommand` -> `DelayCommand`. Every view `extends` a JavaFX layout (`BoardView extends VBox`). |
-| **Polymorphism** | Same method call, different behaviour | `aircraft.cabinCrew()` gives a different answer per subclass. Each `FlightStatus` has its own `nextStatuses()`. The UI shows any `Notification` without knowing which one. |
-| **Abstraction** | Show *what*, hide *how* | `FlightDataSource` interface (`load`/`save`), abstract classes `Aircraft`, `AdminCommand`, `Notification`. |
+| **Encapsulation** | Bundling data and methods together while restricting direct access, to prevent accidental changes. | • All fields in `Flight` are `private`.<br>• Data is modified only through controlled methods like `changeGate()`, `delayByMinutes()` and `cancel()`.<br>• The constructor validates the data, so an invalid `Flight` object can never be created. |
+| **Inheritance** | Reusing and extending code from a parent class to create child classes. | • **Domain models:** `Aircraft` is the parent of `NarrowBody`, `WideBody` and `RegionalJet`.<br>• **Exceptions:** `FidsException` is the base class of 5 custom exceptions.<br>• **Commands:** `AdminCommand` → `FlightCommand` → `DelayCommand`.<br>• **UI components:** every custom view extends a JavaFX layout (e.g. `BoardView extends VBox`). |
+| **Polymorphism** | One interface, many behaviours: different classes respond to the same method call in their own way. | • Calling `aircraft.cabinCrew()` gives a different result depending on the aircraft subclass.<br>• Each constant in the `FlightStatus` enum implements its own `nextStatuses()`.<br>• The UI can display any `Notification` without knowing its exact type. |
+| **Abstraction** | Hiding complex details and exposing only the essential features. | • The `FlightDataSource` interface exposes simple `load()` and `save()` operations and hides how the data is stored (JSON file or memory).<br>• Base definitions are kept abstract using abstract classes such as `Aircraft`, `AdminCommand` and `Notification`. |
 
 ---
 
@@ -53,39 +53,43 @@ find their gate. Staff change gates, delay or cancel flights, add flights and un
 
 ### Exception handling
 - Custom **checked exceptions**: `FidsException` and 5 subclasses (`InvalidFlightException`, `GateOccupiedException`, `FlightNotFoundException`, ...).
-- `throw` when a rule is broken (`Flight` constructor, `Booking.checkIn()`), `throws` in the method signature, `try / catch / finally` where we handle it.
-- **try-with-resources** closes files automatically (`JsonDataSource`).
-- One `catch (FidsException e)` handles every custom error, and the message goes straight onto the screen.
+- `throw` raises the error when a rule is broken (e.g. the `Flight` constructor, `Booking.checkIn()` on a second check-in).
+- `throws` in a method signature warns callers that it can fail, so they must handle it.
+- `try / catch / finally` handles the error where it matters, e.g. `FidsController.runStaff()` catches it and shows the message; `finally` always refreshes the screen.
+- **try-with-resources** closes the file automatically when reading or writing (`JsonDataSource`).
+- Because all custom exceptions extend `FidsException`, one `catch (FidsException e)` handles every one of them.
 
 ### Collections and generics
-- `List`, `Map`, `Set`, `Deque` (the undo stack), `LinkedHashMap` (keeps order and gives fast lookup), `EnumMap`, `EnumSet`.
-- **Generics**: `List<Flight>`, `Map<String, Flight>`, `TableView<Flight>`.
-- `List.copyOf(...)` returns an unmodifiable copy so outside code can't change our data.
+- `List` (ordered items, e.g. bookings), `Map` (lookup by key, e.g. flight id → `Flight`), `Set` (no duplicates, e.g. allowed next statuses).
+- `Deque` is the undo stack: the newest command is popped first (last in, first out).
+- `LinkedHashMap` keeps insertion order and gives fast lookup. `EnumMap` / `EnumSet` are fast versions keyed by enums.
+- **Generics**: the type is fixed at compile time, e.g. `List<Flight>` can only hold flights, and `TableView<Flight>` has one `Flight` per row.
+- `List.copyOf(...)` returns an unmodifiable copy so outside code can't change `FlightService`'s internal data (encapsulation).
 
 ### Modern Java (Java 8 to 17)
-- **Lambdas**: `e -> tick()`, used for button clicks and timers.
-- **Method references**: `Flight::scheduledTime`, `JsonDataSource::toRec`.
-- **Streams**: `flights.stream().filter(...).sorted(...).toList()`.
-- **`Optional`**: a value that may be missing, so we avoid `null` (`find()`, `Notification.from()`).
-- **Switch expressions** (`case X -> ...`): `Aircraft.of()`, `TimeAwareStrategy`.
-- **Varargs** (`String... styles`) in `Ui.label(...)`.
-- **Regex** (`Pattern`): flight number `KQ100` and gate `B2` validation.
-- `java.time`: `LocalDateTime`, `Duration` for departure times and countdowns.
+- **Lambdas**: short anonymous functions, e.g. `e -> tick()` runs every time the timer fires, and button clicks use them too.
+- **Method references**: a shortcut for a simple lambda, e.g. `Flight::scheduledTime` is used to sort flights by time.
+- **Streams**: process a collection step by step, e.g. `flights.stream().filter(...).sorted(...).toList()` builds the board rows.
+- **`Optional`**: a container for a value that may be missing, so we avoid `null` (`FlightService.find()`, `Notification.from()`).
+- **Switch expressions**: `case X -> ...` returns a value, e.g. `Aircraft.of()` picks the subclass and `TimeAwareStrategy` picks the next status.
+- **Varargs**: `String... styles` lets `Ui.label(text, "a", "b")` take any number of CSS class names.
+- **Regex** (`Pattern`): validates the flight number (`KQ100`) and the gate (`B2`).
+- **`java.time`**: `LocalDateTime` and `Duration` for departure times, countdowns and gate-conflict checks.
 
 ---
 
 ## 3. Design patterns
 
-| Pattern | Where | In one sentence |
+| Pattern | What it means | Project implementation |
 |---|---|---|
-| **Observer** | `FlightService` + `FlightListener` + `FlightEvent` | The service tells the controller "a flight changed", so the screen updates itself. |
-| **Command** | `AdminCommand`, `DelayCommand`, `CancelCommand`, `ChangeGateCommand`, `SetStatusCommand`, `AddFlightCommand` | Each staff action is an object with `execute()` and `undo()`, so undo and the audit log are easy. |
-| **Template Method** | `FlightCommand.execute()` (final) | Fixed steps (find flight, save state, apply, remember), and subclasses only fill in `apply()`. |
-| **Memento** | `Flight.snapshot()` / `restore()` | A saved copy of a flight's changeable values, used for undo and saving. |
-| **Strategy** | `StatusTransitionStrategy` -> `TimeAwareStrategy`, `RandomProgressionStrategy` | Swap how flights progress at run time without changing the simulation code. |
-| **Factory method** | `Aircraft.of(key)`, `Notification.from(event)` | A method that picks and builds the right subclass. |
-| **Dependency injection** | `new FlightService(source)`, `new BoardView(this)` | Objects receive what they need instead of creating it. |
-| **MVC-style layers** | model / `FlightService` / views + `FidsController` | Data, rules and display are kept separate. |
+| **Observer** | Objects subscribe to another object and are told automatically when it changes. | • `FlightService` is the subject: `addListener()` subscribes, `fire()` notifies.<br>• `FidsController implements FlightListener`, so it receives a `FlightEvent` after every change and redraws the screen. |
+| **Command** | Turn an action into an object so it can be logged and undone. | • Every staff action is an `AdminCommand` with `execute()`, `undo()` and `describe()`.<br>• Subclasses: `DelayCommand`, `CancelCommand`, `ChangeGateCommand`, `SetStatusCommand`, `AddFlightCommand`.<br>• `FlightService` keeps executed commands on a stack, which powers Undo and the audit log. |
+| **Template Method** | A parent fixes the steps of a process; children fill in one step. | • `FlightCommand.execute()` is `final`: find flight → save snapshot → call `apply()` → remember it.<br>• Each subclass only writes `apply()`, so undo works the same for all of them. |
+| **Memento** | Save an object's state so it can be restored later. | • `Flight.snapshot()` returns a `Flight.Snapshot` record (gate, status, estimated time, reason).<br>• `Flight.restore()` puts it back; used for undo and for loading saved data. |
+| **Strategy** | Make an algorithm swappable at run time. | • `StatusTransitionStrategy` has two implementations: `TimeAwareStrategy` (follows the clock) and `RandomProgressionStrategy` (fast demo).<br>• `SimulationService` uses the interface type, and the Staff Panel switches strategy with `setStrategy()`. |
+| **Factory method** | A method decides which subclass to create. | • `Aircraft.of("A320")` returns the right `NarrowBody` / `WideBody` / `RegionalJet`.<br>• `Notification.from(event)` returns the matching notification subclass for an event. |
+| **Dependency injection** | An object receives what it needs instead of creating it. | • `new FlightService(source)` takes any `FlightDataSource`.<br>• `new BoardView(this)` receives the controller. |
+| **Layered (MVC-style)** | Separate data, rules and display. | • Model (`model`) holds data, `FlightService` holds rules, views display, and `FidsController` connects them. Views contain no business rules. |
 
 ---
 
