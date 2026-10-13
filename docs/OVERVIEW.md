@@ -145,22 +145,55 @@ find their gate. Staff change gates, delay or cancel flights, add flights and un
 
 ---
 
-## 5. Feature -> concept map (handy during the demo)
+## 5. What you can do in the app, and what happens (handy during the demo)
 
-| You show... | Concepts behind it |
-|---|---|
-| Sort by TIME / GATE / STATUS | `Comparator` per `SortKey` enum (Strategy), streams, `TableView` |
-| Click a row, drawer opens | Event handler lambda, `Timeline` animation, `AppState` property |
-| Pin a flight | `AppState` property -> `refresh()` |
-| Search `BK7F3A` and check in | `FlightService.lookup()`, `Optional`, `Booking.checkIn()`, exceptions on double check-in |
-| Banner when a gate changes | Observer: `FlightEvent` -> `Notification.from()` -> `BannerView` |
-| Route to gate | `GateMap.route()`, `Polyline`, `Timeline` animation |
-| Staff change gate / delay / cancel | Command pattern, validation in `Flight`, custom exceptions |
-| Undo | `Deque` stack + Memento `snapshot()`/`restore()` |
-| Delay with no reason is refused | `InvalidFlightException` thrown by `Flight.delayByMinutes()` |
-| Switch Demo / Realistic | Strategy pattern |
-| Close and reopen, data is kept | `FlightDataSource` interface, `JsonDataSource` + Gson, try-with-resources |
-| Large text / High contrast | CSS class toggled on the root node |
+### Departures board
+| Action | What happens, in plain words | Concepts |
+|---|---|---|
+| Click the TIME / GATE / STATUS header | The flights re-order by that column. Click the same header again and the order flips. Each column knows how to compare two flights, so the board just asks it. | `Comparator` inside the `SortKey` enum (Strategy), streams, `TableView` |
+| Click a flight row | A drawer slides open under the row with terminal, check-in counter, baggage belt and aircraft. Click again and it slides shut. | Click handler (lambda), `Timeline` animation, `AppState` |
+| Pin a flight | That flight jumps to the top and stays there whatever you sort by, until you unpin it. | `AppState` property → `refresh()` |
+| Use the keyboard (arrows, Enter, P, R) | Arrows move between rows, Enter opens the drawer, P pins, R shows the route, so the board works without a mouse. | Key event handlers, `KeyCode` |
+| Watch the board on its own | Every 12 seconds the simulator moves one flight along (for example to Boarding). The status badge pops and the row flashes, with no click needed. | `SimulationService`, `Timeline`, `ScaleTransition` |
+| A gate changes or a flight is delayed or cancelled | A yellow banner slides down from the top. Gate changes and cancellations show for everyone; a delay or a boarding call shows only if you pinned that flight. | Observer: `FlightEvent` → `Notification.from()` → `BannerView` |
+
+### My Flight (search and check-in)
+| Action | What happens, in plain words | Concepts |
+|---|---|---|
+| Type a flight number or booking reference (e.g. `BK7F3A`) and search | The app first tries it as a flight number; if that fails it tries it as a booking reference and finds that booking's flight. Spaces and lower case don't matter. | `FlightService.lookup()`, `Optional` |
+| Search something that doesn't exist | A friendly "not found" message is shown instead of a crash. | `FlightNotFoundException` caught and shown |
+| Look at the result card | You see the airline, status, gate, seat and a countdown (HH:MM:SS) that ticks every second until departure. | Controller clock `Timeline`, `Duration` |
+| Click an "ALSO BOOKED" chip | The search runs again for the passenger's other booking. | Event handler, `bookingsOf()` |
+| Click Check in | The booking is marked checked in and a boarding pass with a barcode appears. Check-in is refused once the gate has closed or the flight has left. | `Booking.checkIn()`, `Flight.canCheckIn()`, exceptions |
+| Check in the same booking twice | The second attempt is refused with a message. | `BookingAlreadyCheckedInException` |
+
+### Route to gate (map)
+| Action | What happens, in plain words | Concepts |
+|---|---|---|
+| Click "Route to gate" (or press R) | The map screen opens and a dashed line animates from "You are here" through security and the plaza to the gate, with walking time and directions. | `GateMap.route()`, `Polyline`, `Timeline` |
+| Pick another flight in the side drop-down | The route redraws to the new gate. | `ComboBox`, listener |
+
+### Staff mode (login with `staff123`)
+| Action | What happens, in plain words | Concepts |
+|---|---|---|
+| Staff Login | A dialog asks for the password. If it's right, a Staff Panel tab appears; if not, a "login failed" banner shows. Logout hides the tab again. | `Dialog`, `PasswordField`, `AppState.staffMode` |
+| Change gate | The drop-down only lists gates that are free around that flight's departure time, so you can't pick a taken one. Everyone sees a banner and it's written in the audit log. | Command pattern, `GateOccupiedException`, Observer |
+| Delay a flight | You choose a length and a reason. The estimated time moves later and shows in red on the board. A delay with no reason is refused. | `Flight.delayByMinutes()`, `InvalidFlightException` |
+| Cancel a flight | You give a reason (or a default is used). The flight shows Cancelled and cannot be changed any more. | `Flight.cancel()`, final status in `FlightStatus` |
+| Set a status | A staff override: forces a flight into any status you pick, skipping the normal order. (The simulator and normal moves do follow the legal order, e.g. On Time → Boarding → Gate Closed → Departed.) | `SetStatusCommand`, `FlightStatus.nextStatuses()` (polymorphism) |
+| Add a flight | You fill in a form (airline, number, destination, time, gate, aircraft). Bad input such as a wrong number or a taken gate is rejected with a message; otherwise the flight appears on the board. | `AddFlightCommand`, validation in the `Flight` constructor |
+| Undo last action | Reverses the latest staff action, whether a delay, cancel, gate change or an added flight, and logs it. Press again to go back further. | `Deque` stack, Memento `snapshot()` / `restore()` |
+| Read the audit log | Every staff and simulator action is listed with time and who did it. | `AuditEntry` record |
+| Switch Demo / Realistic | Realistic follows the real clock (boarding 25 min before departure). Demo moves flights along quickly so the board is always busy. | Strategy pattern |
+| Pause / resume simulation, or trigger a gate change | Stops or restarts the 12-second timer. The trigger button moves a random flight to a free gate right now. | `Timeline.pause()` / `play()`, `triggerGateChange()` |
+
+### Everywhere
+| Action | What happens, in plain words | Concepts |
+|---|---|---|
+| Ctrl+F, Ctrl+1 to 4 | Jump to search, board, search again, map and staff screens. Ctrl+4 works only when logged in as staff. | `scene.getAccelerators()`, `KeyCombination` |
+| Switch screen with the top tabs | One screen is shown and the others are hidden, with a short fade. | `StackPane`, `FadeTransition` |
+| Aa (large text) / HC (high contrast) | The whole app grows its text or switches to strong colours. Only a CSS class is added; no screen is rebuilt. | CSS class on the root node |
+| Close and reopen the app | The flights are where you left them: statuses, gates, delays and check-ins (the pin is not saved). If the file is missing or broken, the app starts with sample data instead. | `FlightDataSource`, `JsonDataSource` + Gson, try-with-resources |
 
 ---
 
