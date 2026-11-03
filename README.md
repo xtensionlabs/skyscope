@@ -42,8 +42,14 @@ uses the existing demo set from `src/main/resources/data/seed.json`.
    ```
    Get-Content -Raw database/schema.sql | mysql -u root -p
    ```
-   The default app settings use `root` with an empty password. For a different MySQL account, set
-   `SKYSCOPE_DB_URL`, `SKYSCOPE_DB_USER` and `SKYSCOPE_DB_PASSWORD` before starting the app.
+   Make sure the **MySQL Server** service is running; Workbench can be closed after this step. In PowerShell, set
+   the database connection values for the session that will run the app (replace the password with your own):
+   ```powershell
+   $env:SKYSCOPE_DB_URL = 'jdbc:mysql://localhost:3306/skyscope?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa/Nairobi'
+   $env:SKYSCOPE_DB_USER = 'root'
+   $env:SKYSCOPE_DB_PASSWORD = 'your MySQL password'
+   ```
+   These variables last until that PowerShell window is closed. Set them again in any new window.
 4. Run the app:
    ```
    mvnw.cmd javafx:run          # Windows (PowerShell / Command Prompt)
