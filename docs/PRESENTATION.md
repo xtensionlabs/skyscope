@@ -9,7 +9,9 @@ explains one layer. Every presenter should know the **big picture** below, then 
  UI (JavaFX views)  -->  FidsController  -->  FlightService  -->  Flight / Aircraft / Booking   (model)
    what you see          reacts to clicks     the business rules          the data + its own rules
                                                     |
-                                                    +--> FlightDataSource (interface) --> JsonDataSource / FlightRepository
+                                                    +--> FlightDataSource (interface) --> MySqlDataSource / FlightRepository
+                                                                                              ↑
+                                                                                   JsonDataSource (one-time import)
 ```
 
 - The **model** holds the data and protects it (a Flight can't be created or changed in an illegal way).
@@ -61,10 +63,10 @@ Open the files in this order.
 **5. `exception/`**
 - `FidsException extends Exception`, and the other 5 exceptions extend `FidsException`. One `catch (FidsException e)` handles all of them. These are **custom checked exceptions**.
 
-**6. `model/FlightDataSource.java` (interface), `FlightRepository.java`, `data/JsonDataSource.java`**
-- The interface says only `load()` and `save()`. Two classes implement it: memory-only (`FlightRepository`) and JSON file (`JsonDataSource`, using Gson).
-- The rest of the app doesn't know which one it is using: **abstraction + polymorphism**. `FidsController.createService()` falls back to the in-memory one if the file can't be read.
-- `JsonDataSource.load()` shifts all times by the time since the last save, so the board always looks "live".
+**6. `model/FlightDataSource.java` (interface), `FlightRepository.java`, `data/MySqlDataSource.java`**
+- The interface says `load()` and `save()`. `MySqlDataSource` uses JDBC; `FlightRepository` is memory-only. `JsonDataSource` remains to import the old save file once.
+- The rest of the app depends on the interface: **abstraction + polymorphism**. `FidsController.createService()` uses MySQL and falls back to memory if the database is unavailable.
+- `MySqlDataSource` shifts stored times by the time since the last save, so the board resumes with its live-time behavior. If the database is empty, it imports `data/fids.json` or starts from `seed.json`.
 
 **Likely questions for Person 1**
 - *Where is inheritance?* `Aircraft` -> `NarrowBody`/`WideBody`/`RegionalJet`, and `FidsException` -> the 5 exceptions.
@@ -156,7 +158,7 @@ The UI is JavaFX. The views are **built in Java code** (no FXML), and the look c
 - Change a gate in the Staff Panel: *"This runs a ChangeGateCommand (Person 2), which asks the Flight to change (Person 1), and then the Observer fires and the banner appears."*
 - Delay with no reason: *"Refused by Flight.delayByMinutes, which throws InvalidFlightException (Person 1)."*
 - Press Undo: *"The Memento snapshot is restored."*
-- Close and reopen the app: *"JsonDataSource saved and loaded it (Person 1)."*
+- Close and reopen the app: *"MySqlDataSource saved and loaded it (Person 1)."*
 
 **Likely questions for Person 3**
 - *How does the UI know when data changes?* `FlightService` fires a `FlightEvent`. `FidsController` is a `FlightListener`, so it calls `refresh()`.

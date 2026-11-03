@@ -46,6 +46,15 @@ public class JsonDataSource implements FlightDataSource {
     // Reads the file and rebuilds Flight and Booking objects (IOException if reading/parsing fails)
     @Override
     public Snapshot load() throws IOException {
+        return load(true);
+    }
+
+    /** Reads a legacy JSON snapshot without replacing it when every flight is already inactive. */
+    public Snapshot loadForMigration() throws IOException {
+        return load(false);
+    }
+
+    private Snapshot load(boolean resetWhenStale) throws IOException {
         // First run: no file yet, so create it from the sample data and use that
         if (!Files.exists(file)) {
             Snapshot seeded = SampleData.create(LocalDateTime.now());
@@ -75,7 +84,7 @@ public class JsonDataSource implements FlightDataSource {
             }
             // Stale file: every flight already departed or cancelled, so the board would be empty of live flights.
             // Start again from the seed data so there is always a mix of statuses to show.
-            if (flights.stream().noneMatch(f -> f.status().isActive())) {
+            if (resetWhenStale && flights.stream().noneMatch(f -> f.status().isActive())) {
                 Snapshot fresh = SampleData.create(LocalDateTime.now());
                 save(fresh);
                 return fresh;

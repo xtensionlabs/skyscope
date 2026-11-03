@@ -34,6 +34,6 @@ Start the app with `./mvnw javafx:run`. To reset the demo data, close the app an
 ## 5. Accessibility and persistence (1 min)
 1. Press **Ctrl+1**, use the arrow keys to move between rows, **Enter** to expand, **P** to pin, **R** for the route.
 2. Toggle **Aa** (larger text) and **HC** (high contrast).
-3. Pin a flight, make a staff change, close the app and reopen it: everything is exactly as you left it
-   (saved in `data/fids.json`).
+3. Pin a flight, make a staff change, close the app and reopen it: flight and booking data are restored from MySQL.
+   The undo stack and audit log are session-only.
 4. Run `./mvnw test` to show the 65 passing unit tests.

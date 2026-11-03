@@ -21,6 +21,10 @@ public class FlightService {
 
     // Where data is loaded/saved (interface, so storage can be swapped: abstraction)
     private final FlightDataSource source;
+    private final List<Airline> airlines;
+    private final List<SampleData.Destination> destinations;
+    private final List<String> checkInDesks;
+    private final List<String> baggageBelts;
     // Flights by id; LinkedHashMap keeps insertion order and gives fast lookup
     private final Map<String, Flight> flights = new LinkedHashMap<>();
     private final List<Booking> bookings = new ArrayList<>();
@@ -35,6 +39,10 @@ public class FlightService {
     public FlightService(FlightDataSource source) throws IOException {
         this.source = source;
         FlightDataSource.Snapshot s = source.load();
+        airlines = s.airlines();
+        destinations = s.destinations();
+        checkInDesks = s.checkInDesks();
+        baggageBelts = s.baggageBelts();
         for (Flight f : s.flights()) flights.put(f.id(), f);
         bookings.addAll(s.bookings());
     }
@@ -44,6 +52,10 @@ public class FlightService {
     /** Snapshot of all flights in insertion order. */
     // List.copyOf returns an unmodifiable copy, so outside code can't change our internal map (encapsulation).
     public List<Flight> flights() { return List.copyOf(flights.values()); }
+    public List<Airline> airlines() { return airlines; }
+    public List<SampleData.Destination> destinations() { return destinations; }
+    public List<String> checkInDesks() { return checkInDesks; }
+    public List<String> baggageBelts() { return baggageBelts; }
 
     // Optional means "might be missing"; a null id gives an empty Optional instead of crashing.
     public Optional<Flight> find(String id) { return Optional.ofNullable(id == null ? null : flights.get(id)); }
@@ -233,7 +245,8 @@ public class FlightService {
     // Saves everything through the data source; a failure is stored, not thrown, so the app keeps running.
     public void persist() {
         try {
-            source.save(new FlightDataSource.Snapshot(flights(), List.copyOf(bookings)));
+            source.save(new FlightDataSource.Snapshot(flights(), List.copyOf(bookings), airlines, destinations,
+                    checkInDesks, baggageBelts));
             lastSaveError = null;
         } catch (IOException e) {
             lastSaveError = e.getMessage();

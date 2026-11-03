@@ -106,6 +106,7 @@ classDiagram
     }
     class FlightRepository
     class JsonDataSource
+    class MySqlDataSource
     class AdminCommand {
         <<abstract>>
         +execute(FlightService)*
@@ -132,6 +133,7 @@ classDiagram
     FlightService --> FlightDataSource : loads and saves
     FlightDataSource <|.. FlightRepository
     FlightDataSource <|.. JsonDataSource
+    FlightDataSource <|.. MySqlDataSource
     FlightService o--> "*" FlightListener : notifies (Observer)
     FlightListener <|.. FidsController
     AdminCommand <|-- FlightCommand

@@ -2,10 +2,10 @@
 
 A JavaFX flight information display for NBO airport. Passengers view departures, search a flight, check in and
 find their gate. Staff change gates, delay or cancel flights, add flights and undo actions.
-**Java 17 + JavaFX + Maven + Gson + JUnit 5 (65 tests).**
+**Java 17 + JavaFX + Maven + MySQL + Gson + JUnit 5 (65 tests).**
 
 ## Architecture in one line
-`ui` (what you see) -> `FidsController` (reacts to clicks) -> `FlightService` (rules) -> `model` (data) -> `data` (JSON file)
+`ui` (what you see) -> `FidsController` (reacts to clicks) -> `FlightService` (rules) -> `model` (data) -> `MySqlDataSource` -> MySQL
 
 | Package | Job |
 |---|---|
@@ -15,7 +15,7 @@ find their gate. Staff change gates, delay or cancel flights, add flights and un
 | `service.command` | Staff actions as objects (Command pattern) |
 | `notification` | Announcement banners |
 | `state` | What the user is currently doing |
-| `data` | Saving and loading the JSON file |
+| `data` | MySQL persistence and one-time import from the previous JSON file |
 | `ui` | JavaFX screens |
 
 ---
@@ -27,7 +27,7 @@ find their gate. Staff change gates, delay or cancel flights, add flights and un
 | **Encapsulation** | Bundling data and methods together while restricting direct access, to prevent accidental changes. | • All fields in `Flight` are `private`.<br>• Data is modified only through controlled methods like `changeGate()`, `delayByMinutes()` and `cancel()`.<br>• The constructor validates the data, so an invalid `Flight` object can never be created. |
 | **Inheritance** | Reusing and extending code from a parent class to create child classes. | • **Domain models:** `Aircraft` is the parent of `NarrowBody`, `WideBody` and `RegionalJet`.<br>• **Exceptions:** `FidsException` is the base class of 5 custom exceptions.<br>• **Commands:** `AdminCommand` → `FlightCommand` → `DelayCommand`.<br>• **UI components:** every custom view extends a JavaFX layout (e.g. `BoardView extends VBox`). |
 | **Polymorphism** | One interface, many behaviours: different classes respond to the same method call in their own way. | • Calling `aircraft.cabinCrew()` gives a different result depending on the aircraft subclass.<br>• Each constant in the `FlightStatus` enum implements its own `nextStatuses()`.<br>• The UI can display any `Notification` without knowing its exact type. |
-| **Abstraction** | Hiding complex details and exposing only the essential features. | • The `FlightDataSource` interface exposes simple `load()` and `save()` operations and hides how the data is stored (JSON file or memory).<br>• Base definitions are kept abstract using abstract classes such as `Aircraft`, `AdminCommand` and `Notification`. |
+| **Abstraction** | Hiding complex details and exposing only the essential features. | • The `FlightDataSource` interface exposes `load()` and `save()` and hides storage details (MySQL, legacy JSON or memory).<br>• Base definitions are kept abstract using abstract classes such as `Aircraft`, `AdminCommand` and `Notification`. |
 
 ---
 
@@ -56,7 +56,7 @@ find their gate. Staff change gates, delay or cancel flights, add flights and un
 - `throw` raises the error when a rule is broken (e.g. the `Flight` constructor, `Booking.checkIn()` on a second check-in).
 - `throws` in a method signature warns callers that it can fail, so they must handle it.
 - `try / catch / finally` handles the error where it matters, e.g. `FidsController.runStaff()` catches it and shows the message; `finally` always refreshes the screen.
-- **try-with-resources** closes the file automatically when reading or writing (`JsonDataSource`).
+- **try-with-resources** closes database connections and statements automatically (`MySqlDataSource`); the legacy JSON adapter also closes its file reader and writer.
 - Because all custom exceptions extend `FidsException`, one `catch (FidsException e)` handles every one of them.
 
 ### Collections and generics
@@ -149,7 +149,7 @@ find their gate. Staff change gates, delay or cancel flights, add flights and un
 
 **The pattern behind almost every action:** a view's click handler calls a method on `FidsController`. The controller
 either changes `AppState` or asks `FlightService` to do the work. `FlightService` checks the rules, changes the
-`Flight`, saves to JSON and fires a `FlightEvent`. The controller hears that event (Observer) and calls `refresh()`,
+`Flight`, saves to MySQL and fires a `FlightEvent`. The controller hears that event (Observer) and calls `refresh()`,
 which redraws every screen from the latest data. The views never change data themselves.
 
 ### Departures board
@@ -201,7 +201,7 @@ which redraws every screen from the latest data. The views never change data the
 | Ctrl+F, Ctrl+1 to 4 | `controller.start()` registers each combination with `scene.getAccelerators()`. Each one runs a lambda that calls `showScreen(...)`. Ctrl+4 first checks `state.staffMode`. |
 | Switch screens with the tabs | A tab click calls `controller.showScreen(s)`, which sets `state.screen`. `showScreen()` inside `refresh()` sets `setVisible/setManaged` so only one screen in the `StackPane` shows, then plays a 220 ms `FadeTransition`. |
 | Aa / HC buttons | Call `toggleLargeText()` / `toggleHighContrast()`, which flip a `BooleanProperty`. `refresh()` calls `applyDisplayModes()`, which adds or removes the `large-text` / `high-contrast` class on the root, and the CSS does the rest. |
-| Close and reopen | `FidsApp.stop()` calls `controller.stop()`, which stops the simulation and calls `service.persist()`. `FlightService` also saves after every change. On the next start, `createService()` builds a `JsonDataSource`; `load()` reads the file with Gson, rebuilds `Flight` and `Booking` objects, and shifts every time forward by the time that has passed. If the file is missing it is created from `SampleData`; if it is broken, `createService()` falls back to the in-memory `FlightRepository`. |
+| Close and reopen | `FidsApp.stop()` calls `controller.stop()`, which stops the simulation and calls `service.persist()`. `FlightService` also saves after every change. On start, `createService()` uses `MySqlDataSource`; it loads flights, catalogs and bookings, then advances scheduled and estimated times by the time since the previous save. On the first empty database, it imports local `data/fids.json` if present, otherwise it uses `SampleData` from `seed.json`. If MySQL is unavailable, it logs a warning and falls back to the in-memory `FlightRepository`. |
 
 ---
 

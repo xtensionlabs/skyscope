@@ -56,17 +56,17 @@ class AdminView extends ScrollPane {
     // add flight
     // Inputs of the "Add a flight" form.
     private final TextField noField = new TextField();       // flight number digits (the airline code is added for you)
-    private final ComboBox<Airline> airlineBox = new ComboBox<>(FXCollections.observableArrayList(SampleData.airlines()));
+    private final ComboBox<Airline> airlineBox = new ComboBox<>();
     // Destination drop-down; choosing a city also fills in its airport code.
-    private final ComboBox<SampleData.Destination> destBox = new ComboBox<>(FXCollections.observableArrayList(SampleData.destinations()));
+    private final ComboBox<SampleData.Destination> destBox = new ComboBox<>();
     // Departure time as two drop-downs: hour (00-23) and minute (every 5 minutes).
     private final ComboBox<String> hourBox = new ComboBox<>(FXCollections.observableArrayList(numbers(24, 1)));
     private final ComboBox<String> minuteBox = new ComboBox<>(FXCollections.observableArrayList(numbers(60, 5)));
     // Only the gates that are free around the chosen time are listed here.
     private final ComboBox<String> newGateBox = new ComboBox<>();
     private final ComboBox<String> aircraftBox = new ComboBox<>(FXCollections.observableArrayList(Aircraft.knownKeys()));
-    private final ComboBox<String> checkInBox = new ComboBox<>(FXCollections.observableArrayList(withTba(SampleData.checkInDesks())));
-    private final ComboBox<String> beltBox = new ComboBox<>(FXCollections.observableArrayList(withTba(SampleData.baggageBelts())));
+    private final ComboBox<String> checkInBox = new ComboBox<>();
+    private final ComboBox<String> beltBox = new ComboBox<>();
 
     // simulation + audit
     // Drop-down to choose how flight statuses progress (Strategy pattern: each option is a different algorithm).
@@ -83,6 +83,10 @@ class AdminView extends ScrollPane {
         this.ctl = ctl;
         getStyleClass().add("lookup-scroll");
         setFitToWidth(true);
+        airlineBox.setItems(FXCollections.observableArrayList(ctl.airlines()));
+        destBox.setItems(FXCollections.observableArrayList(ctl.destinations()));
+        checkInBox.setItems(FXCollections.observableArrayList(withTba(ctl.checkInDesks())));
+        beltBox.setItems(FXCollections.observableArrayList(withTba(ctl.baggageBelts())));
 
         // Configure the flight picker: stretch to full width, hint text, and custom cell text.
         picker.setMaxWidth(Double.MAX_VALUE);

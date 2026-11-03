@@ -1,12 +1,14 @@
 package com.example.airplane.ui;
 
-import com.example.airplane.data.JsonDataSource;
+import com.example.airplane.data.MySqlDataSource;
 import com.example.airplane.exception.FidsException;
 import com.example.airplane.exception.FlightNotFoundException;
 import com.example.airplane.model.Booking;
+import com.example.airplane.model.Airline;
 import com.example.airplane.model.Flight;
 import com.example.airplane.model.FlightRepository;
 import com.example.airplane.model.FlightStatus;
+import com.example.airplane.model.SampleData;
 import com.example.airplane.notification.Notification;
 import com.example.airplane.service.*;
 import com.example.airplane.service.command.AdminCommand;
@@ -32,7 +34,6 @@ import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -110,12 +111,12 @@ public class FidsController implements FlightListener {
         state.onChange(() -> { if (suspended == 0) refresh(); });
     }
 
-    /** Saved JSON data if possible; otherwise fall back to the in-memory sample data. */
+    /** MySQL is the normal store; use sample memory data if MySQL is not ready for the demo. */
     private static FlightService createService() {
         try {
-            return new FlightService(new JsonDataSource(Path.of("data", "fids.json")));
+            return new FlightService(MySqlDataSource.fromEnvironment());
         } catch (IOException | RuntimeException e) { // exception handling: catch either error type
-            System.err.println("Using in-memory sample data (" + e.getMessage() + ")");
+            System.err.println("MySQL unavailable; using in-memory sample data (" + e.getMessage() + ")");
             try {
                 return new FlightService(new FlightRepository());
             } catch (IOException ex) {
@@ -126,6 +127,11 @@ public class FidsController implements FlightListener {
 
     /** Getter used by FidsApp to put this layout into the Scene. */
     public StackPane root() { return root; }
+
+    List<Airline> airlines() { return service.airlines(); }
+    List<SampleData.Destination> destinations() { return service.destinations(); }
+    List<String> checkInDesks() { return service.checkInDesks(); }
+    List<String> baggageBelts() { return service.baggageBelts(); }
 
     /** Finishes setup once the Scene exists: CSS, shortcuts, simulation and the one-second clock. */
     public void start(Scene scene) {

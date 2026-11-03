@@ -10,8 +10,9 @@ It models a fictional Nairobi (NBO) airport with three terminals and 24 gates. P
 departures board, look up their own flight, and find the walking route to their gate. Airport staff can log in to
 add, delay, cancel or re-gate flights, with every action validated, logged and undoable.
 
-Everything runs locally: no database or internet connection is needed. The demo flights are loaded from
-`src/main/resources/data/seed.json` on first launch and the app saves its state to `data/fids.json` afterwards.
+The app runs locally and stores its live flight data in MySQL. On its first database launch it imports the current
+`data/fids.json` file when available, preserving saved flight and booking details. A clean install with no saved JSON
+uses the existing demo set from `src/main/resources/data/seed.json`.
 
 ## Setup
 
@@ -19,8 +20,9 @@ Everything runs locally: no database or internet connection is needed. The demo 
 
 - **Git**, to download the project (<https://git-scm.com/downloads>). Check with `git --version`.
 - **JDK 17 or newer** (developed on JDK 26). Check with `java -version`.
+- **MySQL 8.0 or newer**, running locally or reachable through the configured JDBC URL.
 - Nothing else to install: Maven comes with the project (`mvnw` / `mvnw.cmd`).
-- An internet connection is needed only the first time, so Maven can download its libraries (JavaFX, Gson, Ikonli).
+- An internet connection is needed the first time, so Maven can download its libraries (including MySQL Connector/J).
 
 **Steps**
 
@@ -35,12 +37,19 @@ Everything runs locally: no database or internet connection is needed. The demo 
    cd skyscope
    ```
    Use `dir` (Windows) or `ls` to check that you can see `pom.xml`. All the commands below are run from here.
-3. Run the app:
+3. Create the database tables by opening `database/schema.sql` in MySQL Workbench and running it, or run it from the
+   MySQL command line:
+   ```
+   Get-Content -Raw database/schema.sql | mysql -u root -p
+   ```
+   The default app settings use `root` with an empty password. For a different MySQL account, set
+   `SKYSCOPE_DB_URL`, `SKYSCOPE_DB_USER` and `SKYSCOPE_DB_PASSWORD` before starting the app.
+4. Run the app:
    ```
    mvnw.cmd javafx:run          # Windows (PowerShell / Command Prompt)
    ./mvnw javafx:run            # macOS, Linux or Git Bash
    ```
-4. Run the unit tests (optional):
+5. Run the unit tests (optional):
    ```
    mvnw.cmd test                # 65 JUnit 5 tests
    ```
@@ -64,8 +73,10 @@ The first run in any IDE downloads the libraries, so keep your internet connecti
 
 **Staff login:** open the Staff screen and use the demo password `staff123`.
 
-**Reset the demo data:** close the app and delete the `data/` folder. A fresh set of flights is created on the next
-launch. This also happens automatically if every flight in the saved file has already departed or been cancelled.
+**Data migration:** the first launch against an empty database imports `data/fids.json` if it exists; later launches
+read and write MySQL. If that file is absent, the app fills the database from `seed.json`. The old JSON file remains
+as a backup. To reset a local demo to the seed set, back up or remove `data/fids.json`, then clear the MySQL tables
+(`bookings`, `flights`, `passengers`, `airlines`, `destinations`, and `app_state`) and restart the app.
 
 **Troubleshooting**
 
@@ -95,7 +106,7 @@ launch. This also happens automatically if every flight in the saved file has al
   and simulation controls. Forms use drop-downs instead of typing: destinations, departure time, aircraft, check-in
   desks and baggage belts, and **only the gates that are free** at the chosen time are offered. Delays and
   cancellations carry a reason that passengers see on the board and in announcements.
-- **Persistence** – flights and bookings are saved as JSON after every change and restored on launch.
+- **Persistence** – flights, reference data, passengers and bookings are saved to MySQL after every change.
 - **Accessibility** – keyboard navigation (arrows, Enter, `P` pin, `R` route, Ctrl+F search, Ctrl+1-4 screens),
   tooltips, screen-reader labels, larger-text and high-contrast modes.
 - **Look** – flat black-and-yellow airport-signage style with monospace terminal-style data, real airline logos
@@ -107,12 +118,13 @@ launch. This also happens automatically if every flight in the saved file has al
 |---|---|
 | `model` | `Flight` (encapsulated, enforces business rules), `Aircraft` hierarchy (`NarrowBody`, `WideBody`, `RegionalJet`), `Booking`, `Passenger`, `Airline`, `FlightStatus` (enum implementing `StatusBehaviour`), `FlightDataSource` interface, in-memory `FlightRepository`, `SampleData` (reads the demo data from `resources/data/seed.json`) |
 | `exception` | `FidsException` and subclasses: `FlightNotFoundException`, `InvalidGateException`, `GateOccupiedException`, `InvalidFlightException`, `BookingAlreadyCheckedInException` |
-| `data` | `JsonDataSource` – Gson persistence; loading shifts times so the board resumes where it was left |
+| `data` | `MySqlDataSource` – JDBC persistence and first-run JSON migration; `JsonDataSource` reads the old file |
 | `service` | `FlightService` (business layer, audit log, undo, observer events), `SimulationService`, `StatusTransitionStrategy` + two strategies, `GateMap` (geometry and routes), `command/*` (staff commands) |
 | `notification` | `Notification` (abstract) and four subclasses, created by a factory from flight events |
 | `state` | `AppState` – sort, pin, expanded row, selection, screen, staff mode, display modes, lookup query |
 | `ui` | `FidsController` (presenter) and views: `HeaderBar`, `BoardView`, `LookupView`, `WayfinderView`, `AdminView`, `BannerView` |
-| `resources` | `css/base.css` (components) + `css/light.css` (palette), `data/seed.json` (demo flights, airlines, destinations), `logos/` (airline logos) |
+| `resources` | `css/base.css` (components) + `css/light.css` (palette), `data/seed.json` (fallback demo data), `logos/` |
+| `database` | `schema.sql` creates the normalized MySQL tables and keys |
 
 Data flow: user actions call controller methods → they mutate `AppState` or call `FlightService` → data changes
 reach the controller as `FlightEvent`s (Observer) → a single `FidsController.refresh()` re-renders every view from
@@ -123,5 +135,5 @@ OOP and design-pattern highlights: encapsulation (`Flight`), inheritance (`Aircr
 (`FlightDataSource`, `FlightListener`, `StatusTransitionStrategy`, `StatusBehaviour`), custom checked exceptions,
 Observer, Strategy, Command + Memento (undo), Template Method, Factory, MVC/MVP.
 
-See [`docs/UML.md`](docs/UML.md) for class, package, sequence and state diagrams and
-[`docs/DEMO.md`](docs/DEMO.md) for a demo script.
+See [`docs/DATABASE.md`](docs/DATABASE.md) for the project/data map and MySQL setup, [`docs/UML.md`](docs/UML.md) for
+class, package, sequence and state diagrams, and [`docs/DEMO.md`](docs/DEMO.md) for a demo script.
