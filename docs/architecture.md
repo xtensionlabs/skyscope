@@ -1,44 +1,45 @@
 # Brian — Architecture & OOP
 
-**Time:** about 2 minutes · **Goal:** explain the code structure, then use one file to illustrate OOP.
+**Time:** 2–3 minutes · **Goal:** explain how the layers work together, then use one file to illustrate OOP.
 
-## Show the architecture
+## Explain the architecture flow
 
 ```mermaid
 flowchart LR
     Views["JavaFX views"] --> Controller["FidsController"]
     Controller -->|user actions| Service["FlightService"]
     Service --> Model["Flight model"]
-    Service --> Source["FlightDataSource"]
+    Service -->|load and save| Source["FlightDataSource"]
     Source --> Adapter["MySqlDataSource"]
     Adapter --> DB[("MySQL")]
     Service -. flight events .-> Controller
 ```
 
-- **Views** display the board, My Flight, wayfinding, and staff panel.
-- **FidsController** routes user actions and refreshes the views.
-- **FlightService** applies rules and coordinates saves, events, simulation, and staff actions.
-- **Model** holds flight and booking data and protects valid state.
-- **FlightDataSource** separates the app from its storage implementation.
+Start at the screen: a passenger searches or staff changes a gate. The view sends that action to FidsController, which calls FlightService. The service applies the business rules and changes the model. For storage, it uses the FlightDataSource interface; MySqlDataSource handles the SQL work.
 
-**Say:** “Each layer has a clear job. The screens do not contain the flight rules or database code, so a change in one area does not require rewriting the whole app.”
+The dotted arrow is the Observer path. After a successful change, FlightService sends an event to the controller. The controller refreshes the views and shows a notification when appropriate.
 
-## One short code example: Aircraft.java
+**Say:** “The screen handles presentation, the controller coordinates, and the service owns the rules. Keeping those jobs separate means the flight rules do not have to live inside every screen.”
 
-Open **src/main/java/com/example/airplane/model/Aircraft.java** and show only these lines:
+## Use one file for the OOP explanation
 
-- **9–13:** Aircraft is abstract; its fields are private. Explain abstraction and encapsulation.
-- **29–32:** category and cabinCrew are abstract methods. Each aircraft type provides its own behavior, showing polymorphism.
-- **47–56:** the factory creates NarrowBody, RegionalJet, or WideBody objects. These types inherit from Aircraft.
+Open **src/main/java/com/example/airplane/model/Aircraft.java**. Show lines **9–13**, **29–32**, and **47–56**.
 
-**Say:** “Aircraft keeps shared data private and defines what all aircraft types must provide. The factory creates the right subtype, and that subtype supplies its own category and crew requirement.”
+- **Encapsulation:** the aircraft’s shared fields are private and final, so other classes cannot change them directly.
+- **Abstraction:** Aircraft is abstract. It describes what every aircraft has and which behaviors each type must provide.
+- **Inheritance:** NarrowBody, RegionalJet, and WideBody extend Aircraft. The factory shown in this file creates the appropriate subtype.
+- **Polymorphism:** each subtype implements category and cabinCrew for its own aircraft type. The caller can use the Aircraft type and get the right behavior from the actual subtype.
 
-The subclass declarations are in separate files; name the inheritance relationship without opening another file.
+**Say:** “Aircraft keeps shared details private and defines the behavior all aircraft types must provide. The factory creates a particular subtype; when the program asks for its category or crew requirement, that subtype gives the answer.”
 
-## Connect the design to the demo
+The actual extends declarations are in the subtype files. Name that relationship without opening another file during this short explanation.
 
-- **Observer:** flight events tell the controller to refresh the board.
-- **Strategy:** staff can switch the simulation between Demo and Realistic behavior.
-- **Command + Memento:** staff actions can be undone by restoring a saved flight snapshot.
+## Link the patterns to what the audience saw
 
-> “These patterns keep updates, simulation, and undo consistent while the layers keep the code organized. Wendy will briefly show how the data is saved and loaded.”
+- **Observer:** after a flight changes, FlightService sends an event; FidsController receives it, refreshes the board, and shows a notification when needed.
+- **Strategy:** staff can switch Demo and Realistic behavior at runtime. SimulationService calls the same strategy interface in either mode.
+- **Command + Memento:** each staff action is a command object. Flight commands keep snapshots so Undo can restore earlier values; undoing a newly added flight removes it.
+- **Factory:** Aircraft.of selects the concrete aircraft subtype from its key, so callers do not construct each subtype themselves.
+- **Presenter-style UI:** FidsController handles actions and refreshes the views. This is MVP-inspired separation, not a formal MVC framework.
+
+**Handoff:** “Those layers and patterns keep the passenger and staff features connected without mixing their responsibilities. Wendy will show where the flight and booking data is saved.”
