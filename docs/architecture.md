@@ -46,6 +46,18 @@ FlightStatus implements StatusBehaviour. Each status provides the transitions an
 
 **Say:** “The flight lifecycle is expressed through status behavior instead of a growing chain of status-specific conditionals.”
 
+## Short code moment — one file, about 40 seconds
+
+If asked to show the implementation, open **src/main/java/com/example/airplane/model/Aircraft.java**. Keep the code tour to these ranges:
+
+- **Lines 9–13:** the abstract Aircraft class and its private final fields. Use this to explain abstraction and encapsulation.
+- **Lines 29–32:** abstract category and cabinCrew methods. Explain that each concrete aircraft type supplies its own implementation, which is polymorphism.
+- **Lines 47–56:** the factory selects NarrowBody, RegionalJet, or WideBody objects. Explain that these types inherit Aircraft and provide the concrete behavior.
+
+**Say:** “Aircraft keeps shared data private and defines the behavior all aircraft types must provide. The factory creates the right subtype; when the program asks for its category or crew requirement, that subtype supplies the answer.”
+
+The subclass declarations themselves are in separate files. For this short code example, name the inheritance relationship without opening those files.
+
 ## 3. Connect the patterns to visible features
 
 | Pattern | Where it appears | What the audience just saw |

@@ -141,5 +141,5 @@ OOP and design-pattern highlights: encapsulation (`Flight`), inheritance (`Aircr
 (`FlightDataSource`, `FlightListener`, `StatusTransitionStrategy`, `StatusBehaviour`), custom checked exceptions,
 Observer, Strategy, Command + Memento (undo), Template Method, Factory, MVC/MVP.
 
-See [`docs/DATABASE.md`](docs/DATABASE.md) for the project/data map and MySQL setup, [`docs/UML.md`](docs/UML.md) for
-class, package, sequence and state diagrams, and [`docs/DEMO.md`](docs/DEMO.md) for a demo script.
+See [`docs/database.md`](docs/database.md) for the project/data map and MySQL setup, [`docs/UML.md`](docs/UML.md) for
+class, package, sequence and state diagrams, and [`docs/demo.md`](docs/demo.md) for a demo script.
