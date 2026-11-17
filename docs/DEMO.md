@@ -1,39 +1,70 @@
-# Demo script (about 6 minutes)
+# Njeri — Live Demo & Features
 
-Start the app with `./mvnw javafx:run`. To reset the demo data, close the app and delete the `data/` folder.
+**Role:** introduce the airport problem, then show how SkyScope helps passengers and staff.
+**Target time:** about 5–6 minutes.
+**Audience takeaway:** one live system supports the public departures board, a ticketed passenger, wayfinding, and airport staff.
 
-## 1. The board (1 min)
-1. Point out the live clock, the **LIVE** dot and "Updated" time.
-2. Click the **TIME** header, then click it again: the arrow flips and the order reverses. Try **GATE** and **STATUS**.
-3. Click a row: the drawer slides open (terminal, check-in, baggage belt, aircraft). Click again to close it.
-4. Click the pin on any flight: it jumps to the top and stays there whatever you sort by.
-5. Hover a status badge and a gate to show the tooltips.
-6. Wait for the simulation: a status badge pops when it changes, and a yellow banner slides in for gate changes.
+## Before the audience arrives
 
-## 2. My Flight and check-in (1 min)
-1. Press **Ctrl+F** (works from any screen), type `BK7F3A`, press Enter.
-2. Show the countdown tiles, gate and seat. Click the **ALSO BOOKED** chip to open the passenger's second booking.
-3. Click **Check in**: a boarding pass with a barcode appears. Click Check in again after re-searching to show it is gone.
-4. Search `nope` to show the friendly not-found message (a `FlightNotFoundException` underneath).
+- Start the app and confirm the board is visible.
+- Make sure MySQL is connected if the team plans to show persistence later.
+- Confirm booking **BK7F3A** is not already checked in. The database keeps check-in state between launches.
+- Have a free gate and an unused flight number available for the add-flight step.
+- Simulation changes are event-driven and can be random. For a reliable live banner, log in to Staff Mode during setup, select **Demo**, then log out and leave the app running with the Board visible. The simulator ticks about every 12 seconds; do not pause the presentation waiting for a random event.
 
-## 3. Wayfinding (30 s)
-1. On the board, click any row, then **Route to gate**.
-2. Show the pulsing "You are here" marker, the animated route, the walking time and the directions.
-3. Pick a different flight in the side-panel dropdown and watch the route change.
+## 1. Quick intro — 30 seconds
 
-## 4. Staff mode (2 min)
-1. Click **Staff Login**, enter `staff123`. A **Staff Panel** tab appears.
-2. Select a flight and open the **Change gate** drop-down: it lists only the gates that are free at that flight's time, so staff cannot pick an occupied gate.
-3. Choose a free gate and press **Change gate**: the banner announces it on the board and the audit log records it.
-4. Delay a flight: pick a reason (for example *Bad weather*) and a length (30 minutes). The board shows the new estimated time in red and the reason appears in the details drawer. A delay without a reason is refused.
-5. Cancel a flight with a reason: check the board row and its details drawer.
-6. Click **Undo last action** a few times and watch the board and audit log revert.
-7. Add a flight: choose the airline, type the digits `777`, pick Cairo as the destination, choose a departure hour and minute, then a gate from the list of free gates and an aircraft type. Press **Add flight** with a field left empty to show the validation message.
-8. Switch the progression strategy between **Demo** and **Realistic**, pause and resume the simulation.
+> “At a busy airport, passengers can miss a gate change when they rely on static boards, and staff need a quick way to keep flight information current. SkyScope gives three perspectives on the same live data: a general passenger can follow departures, a ticketed passenger can manage a booking, and airline staff can update flights.”
 
-## 5. Accessibility and persistence (1 min)
-1. Press **Ctrl+1**, use the arrow keys to move between rows, **Enter** to expand, **P** to pin, **R** for the route.
-2. Toggle **Aa** (larger text) and **HC** (high contrast).
-3. Pin a flight, make a staff change, close the app and reopen it: flight and booking data are restored from MySQL.
-   The undo stack and audit log are session-only.
-4. Run `./mvnw test` to show the 65 passing unit tests.
+## 2. Board View — about 1 minute
+
+1. Point out the live clock, **LIVE** indicator, and last-updated time.
+2. Click the **TIME** heading to sort, then click again to reverse the order. Repeat quickly with **GATE** or **STATUS**.
+3. Click a flight row to open its details drawer. Point out terminal, check-in counter, baggage belt, and aircraft. Click again to close it.
+4. Pin a flight so it stays at the top when the board is sorted.
+5. Show a live status change or simulation banner if one appears. Explain that the board refreshes from flight events; the simulation uses the same service path as staff changes.
+
+**Transition:** “The board is useful to everyone in the terminal. Now I’ll follow one passenger’s booking.”
+
+## 3. My Flight — about 1 minute
+
+1. Press **Ctrl+F**, enter **BK7F3A**, and press Enter.
+2. Point out the flight, gate, seat, boarding group, and countdown.
+3. Click the **also booked** shortcut to show the passenger’s other booking, then return to **BK7F3A**.
+4. Click **Check in**. Show the confirmation and generated boarding pass with its barcode.
+
+**Say:** “The booking reference gives the passenger a direct path to their flight, check-in, and boarding pass.”
+
+## 4. Wayfinding — about 30 seconds
+
+1. Return to the board, select a flight, and choose **Route to gate** from its details drawer.
+2. Show the animated route from **You are here**, the highlighted gate, and the estimated walking distance and time.
+3. Briefly point out the directions beside the map.
+
+**Transition:** “Passengers can find their gate. Staff can keep the information accurate when plans change.”
+
+## 5. Staff Mode — about 2 minutes
+
+1. Click **Staff Login** and enter **staff123**. The Staff Panel opens.
+2. Select a flight and choose a free gate, then click **Change gate**. Point out the board notification and audit entry.
+3. Select an eligible flight, choose a delay length such as **30 minutes**, choose a reason such as **Bad weather**, and apply the delay.
+4. Click **Undo last action** immediately. The delay is reversed, showing the staff undo flow.
+5. Add a flight: choose an airline, enter unused digits such as **777**, select **Cairo**, choose a departure time, free gate, and aircraft, then submit. Fill all required fields.
+6. Switch the simulation strategy between **Demo** and **Realistic**. Demo advances flights quickly; Realistic follows the clock. Leave the preferred setting running.
+
+**Say:** “Staff actions are validated and recorded. The same live board reflects the change, and the most recent staff action can be undone.”
+
+## 6. Accessibility and handoff — about 30 seconds
+
+1. Toggle **HC** in the header to show high-contrast mode.
+2. Press **Ctrl+1** to return to the board. Use the arrow keys to select a flight, **Enter** to open its details, **P** to pin it, and **R** to route to its gate.
+3. Hand off to Brian:
+
+> “That is the passenger and staff experience. Brian will show how the architecture and OOP design support these features.”
+
+## If a step goes wrong
+
+- **No live banner appears:** keep moving through the demo. The simulation is timed and random; explain that flight events refresh the board and show a banner when the event calls for one.
+- **BK7F3A is already checked in:** use a clean presentation database or restore that booking before the demo. MySQL state is independent of data/fids.json once the database has been populated.
+- **The new flight number already exists:** choose a different unused airline and digit combination.
+- **The staff action fails:** choose an active flight and a gate shown as available. Gate and status rules are enforced by the application.
