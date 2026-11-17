@@ -1,87 +1,35 @@
 # Brian — Architecture & OOP
 
-**Role:** explain how SkyScope is organized and why the design stays maintainable.
-**Suggested time:** 3–4 minutes.
-**Audience takeaway:** the interface, business rules, flight model, and storage have clear responsibilities, with OOP and patterns connecting them.
+**Time:** about 2 minutes · **Goal:** explain the code structure, then use one file to illustrate OOP.
 
-## Before presenting
+## Show the architecture
 
-Open **docs/UML.md** and go to **3. Package diagram**. Keep the package structure diagram visible while you explain the flow. Use the domain and service diagrams in sections 1 and 2 only if the audience asks for more detail.
+**JavaFX views → FidsController → FlightService → Flight model → FlightDataSource → MySQL**
 
-## Opening
+- **Views** display the board, My Flight, wayfinding, and staff panel.
+- **FidsController** routes user actions and refreshes the views.
+- **FlightService** applies rules and coordinates saves, events, simulation, and staff actions.
+- **Model** holds flight and booking data and protects valid state.
+- **FlightDataSource** separates the app from its storage implementation.
 
-> “You have just seen SkyScope from the passenger and staff perspectives. I’ll show how those features are organized in the code. The key idea is that the JavaFX screens do not own the flight rules or database logic.”
+**Say:** “Each layer has a clear job. The screens do not contain the flight rules or database code, so a change in one area does not require rewriting the whole app.”
 
-## 1. Walk through the layers
+## One short code example: Aircraft.java
 
-Point to the package diagram in **docs/UML.md** and trace one user action:
+Open **src/main/java/com/example/airplane/model/Aircraft.java** and show only these lines:
 
-**JavaFX view → FidsController → FlightService → model → FlightDataSource → MySQL**
+- **9–13:** Aircraft is abstract; its fields are private. Explain abstraction and encapsulation.
+- **29–32:** category and cabinCrew are abstract methods. Each aircraft type provides its own behavior, showing polymorphism.
+- **47–56:** the factory creates NarrowBody, RegionalJet, or WideBody objects. These types inherit from Aircraft.
 
-- **UI (ui/)** contains the board, booking lookup, wayfinding, and staff screens. Views display data and pass user actions to the controller.
-- **Controller and state (FidsController, AppState)** coordinate the screens, remember interface state, and refresh the views from the latest data.
-- **Service (service/)** owns application rules such as gate conflicts, check-in, simulation, event delivery, audit entries, and staff undo.
-- **Model (model/)** represents flights, aircraft, bookings, passengers, and statuses. The model protects its own valid state.
-- **Data (FlightDataSource, data/)** separates storage from the service. MySQL is the normal source; the in-memory repository is a fallback if MySQL is unavailable.
+**Say:** “Aircraft keeps shared data private and defines what all aircraft types must provide. The factory creates the right subtype, and that subtype supplies its own category and crew requirement.”
 
-**Say:** “If we change the screen layout, we do not need to rewrite the flight rules. If we change the storage adapter, the service still talks to the same data-source interface. That separation keeps UI code out of the flight engine.”
+The subclass declarations are in separate files; name the inheritance relationship without opening another file.
 
-## 2. Show the OOP principles in the code
+## Connect the design to the demo
 
-### Encapsulation — model/Flight.java
+- **Observer:** flight events tell the controller to refresh the board.
+- **Strategy:** staff can switch the simulation between Demo and Realistic behavior.
+- **Command + Memento:** staff actions can be undone by restoring a saved flight snapshot.
 
-Flight fields are private. Code changes a flight through methods such as changeGate, delayByMinutes, cancel, and moveTo. Those methods enforce rules and report invalid changes with domain exceptions.
-
-**Say:** “A screen cannot quietly put a flight into an invalid state by assigning a field. It asks the Flight to perform a permitted operation.”
-
-### Inheritance — the aircraft hierarchy
-
-Aircraft is the shared abstract base class. NarrowBody, WideBody, and RegionalJet extend it and provide their own aircraft-specific behavior.
-
-**Say:** “The shared aircraft details live once in the parent. Each aircraft type supplies its own category and crew requirements.”
-
-### Polymorphism — status behavior
-
-FlightStatus implements StatusBehaviour. Each status provides the transitions and announcement behavior for that state. Flight.moveTo asks the current status whether a requested next status is allowed.
-
-**Say:** “The flight lifecycle is expressed through status behavior instead of a growing chain of status-specific conditionals.”
-
-## Short code moment — one file, about 40 seconds
-
-If asked to show the implementation, open **src/main/java/com/example/airplane/model/Aircraft.java**. Keep the code tour to these ranges:
-
-- **Lines 9–13:** the abstract Aircraft class and its private final fields. Use this to explain abstraction and encapsulation.
-- **Lines 29–32:** abstract category and cabinCrew methods. Explain that each concrete aircraft type supplies its own implementation, which is polymorphism.
-- **Lines 47–56:** the factory selects NarrowBody, RegionalJet, or WideBody objects. Explain that these types inherit Aircraft and provide the concrete behavior.
-
-**Say:** “Aircraft keeps shared data private and defines the behavior all aircraft types must provide. The factory creates the right subtype; when the program asks for its category or crew requirement, that subtype supplies the answer.”
-
-The subclass declarations themselves are in separate files. For this short code example, name the inheritance relationship without opening those files.
-
-## 3. Connect the patterns to visible features
-
-| Pattern | Where it appears | What the audience just saw |
-|---|---|---|
-| **Observer** | FlightService, FlightListener, FidsController | A service event reaches the controller, which refreshes the board and shows an appropriate notification. |
-| **Strategy** | StatusTransitionStrategy, TimeAwareStrategy, RandomProgressionStrategy | Staff can switch between clock-based Realistic progression and fast Demo progression while the simulator keeps the same interface. |
-| **Command + Memento** | service/command/, Flight.Snapshot | Staff actions are command objects. A snapshot lets the Undo button restore a changed flight; undoing a newly added flight removes it. |
-| **Factory** | Aircraft.of, Notification.from | Callers ask for a suitable aircraft or notification without constructing a specific subtype themselves. |
-| **Presenter-style UI (MVP-inspired)** | FidsController, AppState, JavaFX views | The controller handles actions and supplies data to views. The views do not call the database or own business rules. |
-
-**Observer talk track:** “A flight change is handled by FlightService. It saves the data and emits a FlightEvent. FidsController listens for that event and refreshes the views.”
-
-**Strategy talk track:** “SimulationService depends on the strategy interface. Changing the selected strategy changes the progression rules at runtime without replacing the simulator.”
-
-**Undo talk track:** “A staff action remembers the flight’s mutable values before changing them. Undo restores that snapshot. The audit log records the action and the undo.”
-
-## 4. Close and hand off
-
-> “The main benefit is that each part has one job: views present information, the controller coordinates, the service enforces application rules, the model protects flight state, and the data-source interface hides storage details. Wendy will show how that data is saved and restored.”
-
-## Quick answers
-
-- **Does the UI talk directly to MySQL?** No. The UI calls the controller and service; the service uses the FlightDataSource abstraction.
-- **How does the board know a flight changed?** FlightService notifies its listeners with a FlightEvent; the controller refreshes the views.
-- **Why use a strategy for simulation?** It lets the app switch progression behavior while keeping the simulation code stable.
-- **What does Undo restore?** The most recent staff command. Flight commands restore a Flight.Snapshot; the add-flight command removes the added flight.
-- **Is this strict MVC?** Describe it as presenter-style or MVP-inspired separation. FidsController coordinates JavaFX views and application state; the project does not use a separate formal MVC framework.
+> “These patterns keep updates, simulation, and undo consistent while the layers keep the code organized. Wendy will briefly show how the data is saved and loaded.”
