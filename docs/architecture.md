@@ -4,7 +4,16 @@
 
 ## Show the architecture
 
-**JavaFX views → FidsController → FlightService → Flight model → FlightDataSource → MySQL**
+```mermaid
+flowchart LR
+    Views["JavaFX views"] --> Controller["FidsController"]
+    Controller -->|user actions| Service["FlightService"]
+    Service --> Model["Flight model"]
+    Service --> Source["FlightDataSource"]
+    Source --> Adapter["MySqlDataSource"]
+    Adapter --> DB[("MySQL")]
+    Service -. flight events .-> Controller
+```
 
 - **Views** display the board, My Flight, wayfinding, and staff panel.
 - **FidsController** routes user actions and refreshes the views.

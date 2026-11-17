@@ -4,7 +4,24 @@
 
 ## Show the data flow
 
-**Screen → FidsController → FlightService → FlightDataSource → MySqlDataSource → MySQL**
+```mermaid
+flowchart TD
+    Schema["Schema installed once (database/schema.sql)"] --> Start["App starts"]
+    Start --> Empty{"Flights table empty?"}
+    Empty -->|No| Read["Load records from MySQL"]
+    Empty -->|Yes| Legacy{"data/fids.json exists?"}
+    Legacy -->|Yes| Import["Import legacy snapshot"]
+    Legacy -->|No| Seed["Load bundled seed data"]
+    Import --> Save["Save starting records to MySQL"]
+    Seed --> Save
+    Read --> Ready["App ready"]
+    Save --> Ready
+    Ready --> Change["Staff update or passenger check-in"]
+    Change --> Validate["FlightService validates the change"]
+    Validate --> Persist["MySqlDataSource saves a snapshot transactionally"]
+    Persist --> DB[("MySQL")]
+    DB -. next launch .-> Start
+```
 
 - The screen sends actions to the controller and service; it does not run SQL.
 - FlightDataSource is the storage contract. MySqlDataSource implements it for the normal MySQL-backed app.
