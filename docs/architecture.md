@@ -1,45 +1,35 @@
-# Brian — Architecture & OOP
+# Brian — OOP Code Walkthrough
 
-**Time:** 2–3 minutes · **Goal:** explain how the layers work together, then use one file to illustrate OOP.
+Open **src/main/java/com/example/airplane/model/Aircraft.java**. Keep the editor on this one file and move through lines **9–13**, **29–32**, then **47–56**.
 
-## Explain the architecture flow
+## Start at lines 9–13 — abstraction and encapsulation
 
-```mermaid
-flowchart LR
-    Views["JavaFX views"] --> Controller["FidsController"]
-    Controller -->|user actions| Service["FlightService"]
-    Service --> Model["Flight model"]
-    Service -->|load and save| Source["FlightDataSource"]
-    Source --> Adapter["MySqlDataSource"]
-    Adapter --> DB[("MySQL")]
-    Service -. flight events .-> Controller
-```
+**Say:**
 
-Start at the screen: a passenger searches or staff changes a gate. The view sends that action to FidsController, which calls FlightService. The service applies the business rules and changes the model. For storage, it uses the FlightDataSource interface; MySqlDataSource handles the SQL work.
+> “I’m using Aircraft as one compact example of how we apply object-oriented programming. Aircraft is abstract, so it describes the general idea of an aircraft rather than one specific plane. The key, name, and seat count are private fields. That means other classes cannot reach in and change them directly. They are also final, so they are set when the object is created and do not change afterwards. Keeping the data inside the class is encapsulation.”
 
-The dotted arrow is the Observer path. After a successful change, FlightService sends an event to the controller. The controller refreshes the views and shows a notification when appropriate.
+**Point out:** the word abstract on the class declaration, then the private final fields.
 
-**Say:** “The screen handles presentation, the controller coordinates, and the service owns the rules. Keeping those jobs separate means the flight rules do not have to live inside every screen.”
+## Move to lines 29–32 — required behavior
 
-## Use one file for the OOP explanation
+**Say:**
 
-Open **src/main/java/com/example/airplane/model/Aircraft.java**. Show lines **9–13**, **29–32**, and **47–56**.
+> “Aircraft also declares category and cabinCrew as abstract methods. The base class knows that every aircraft has a category and a minimum crew requirement, but it does not decide the values here. Each specific aircraft type provides those answers. This is abstraction: the parent defines what its children must provide, while leaving the type-specific details to them.”
 
-- **Encapsulation:** the aircraft’s shared fields are private and final, so other classes cannot change them directly.
-- **Abstraction:** Aircraft is abstract. It describes what every aircraft has and which behaviors each type must provide.
-- **Inheritance:** NarrowBody, RegionalJet, and WideBody extend Aircraft. The factory shown in this file creates the appropriate subtype.
-- **Polymorphism:** each subtype implements category and cabinCrew for its own aircraft type. The caller can use the Aircraft type and get the right behavior from the actual subtype.
+**Point out:** there is no method body after these declarations. The concrete aircraft classes supply the implementation.
 
-**Say:** “Aircraft keeps shared details private and defines the behavior all aircraft types must provide. The factory creates a particular subtype; when the program asks for its category or crew requirement, that subtype gives the answer.”
+## Move to lines 47–56 — inheritance, polymorphism, and the factory
 
-The actual extends declarations are in the subtype files. Name that relationship without opening another file during this short explanation.
+**Say:**
 
-## Link the patterns to what the audience saw
+> “This method takes an aircraft key and creates the matching type. For example, an A320 becomes a NarrowBody, an E190 becomes a RegionalJet, and an A330 becomes a WideBody. Those classes extend Aircraft, so they inherit the shared aircraft structure and provide their own category and crew behavior. That is inheritance.”
 
-- **Observer:** after a flight changes, FlightService sends an event; FidsController receives it, refreshes the board, and shows a notification when needed.
-- **Strategy:** staff can switch Demo and Realistic behavior at runtime. SimulationService calls the same strategy interface in either mode.
-- **Command + Memento:** each staff action is a command object. Flight commands keep snapshots so Undo can restore earlier values; undoing a newly added flight removes it.
-- **Factory:** Aircraft.of selects the concrete aircraft subtype from its key, so callers do not construct each subtype themselves.
-- **Presenter-style UI:** FidsController handles actions and refreshes the views. This is MVP-inspired separation, not a formal MVC framework.
+> “Notice that the factory returns the general Aircraft type even though it creates different specific types. The rest of the program can work with an Aircraft without needing to know which subtype it has. When it asks for category or cabinCrew, Java uses the implementation from the actual subtype. The same method call can produce the right answer for each type; that is polymorphism.”
 
-**Handoff:** “Those layers and patterns keep the passenger and staff features connected without mixing their responsibilities. Wendy will show where the flight and booking data is saved.”
+**Point out:** Aircraft.of returns Aircraft, while the switch creates NarrowBody, RegionalJet, and WideBody objects. Their extends declarations and method implementations are in the subtype files, so you can keep this walkthrough on Aircraft.java.
+
+## Close
+
+**Say:**
+
+> “So this one class gives us a shared abstraction, private data, and a factory for creating specialized aircraft. The subclasses reuse the common structure and supply the behavior that differs. That keeps aircraft handling consistent while still representing each type accurately.”
