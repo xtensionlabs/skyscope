@@ -1,8 +1,6 @@
-# Wendy — Database & Persistence
+# Wendy — Database Walkthrough
 
-**Time:** 2–3 minutes · **Goal:** show how the app loads, updates, and saves its flight and booking data.
-
-## Trace the database flow
+**Time:** about 2–3 minutes · **Focus:** trace one passenger or staff change from the app to MySQL and explain what happens when the app starts again.
 
 ```mermaid
 flowchart TD
@@ -23,39 +21,42 @@ flowchart TD
     DB -. next launch .-> Start
 ```
 
-Begin with the existing-data branch: if MySQL already contains flights, the app loads the current flights, bookings, and reference data. For a new empty database, it imports the older data/fids.json file when available; otherwise it loads the bundled seed data and saves those records to MySQL.
+## What to say
 
-The storage interface keeps this choice out of the screens. MySqlDataSource is the normal persistent source, FlightRepository supplies in-memory sample data if MySQL is unavailable, and JsonDataSource is used only to read the older JSON snapshot during migration.
+### 1. Start at the top of the diagram
 
-**Important setup detail:** database/schema.sql defines the tables, but the app does not create missing MySQL tables automatically. The tables must be prepared before the app can use MySQL.
+> “This diagram shows how SkyScope uses MySQL. The database tables have to be prepared before the app starts; the app does not create missing tables by itself. Once it starts, it checks whether the flights table already has data.”
 
-## Explain what the database stores
+### 2. Explain the two startup paths
 
-Airlines and destinations are shared reference records. Each flight refers to an airline and a destination. Each booking links one passenger to one flight and stores the seat, boarding group, and checked-in flag. The app_state table records when the last data snapshot was saved.
+Point to the Yes and No branches.
 
-This structure avoids repeating airline and destination details on every flight and keeps passenger booking information connected to the relevant flight. Foreign keys enforce those relationships, and a unique constraint prevents two bookings from taking the same seat on one flight.
+> “If flights are already in MySQL, the app loads the existing flights, bookings, and reference data. If the flights table is empty, it looks for the older data/fids.json file. When that file is available, it imports that saved snapshot. If it is not available, the app uses the bundled sample data and saves it to MySQL. After this first load, MySQL becomes the normal source for the app.”
 
-## Follow one update through the app
+**Presenter note:** the current project includes data/fids.json, so a clean database will use that migration path. The bundled seed file is the fallback when the old file is absent.
 
-Use a gate change or a check-in as the example:
+### 3. Explain the storage design and relationships
 
-1. The screen passes the request through FidsController to FlightService.
-2. FlightService checks the rules, such as whether the gate is valid or check-in is still open.
-3. MySqlDataSource saves the updated flight and booking snapshot in a transaction.
-4. The controller receives the change event and refreshes the screen.
+> “The screens do not write to the database directly. FlightService uses a common storage interface, and MySqlDataSource handles the MySQL work. There is also an in-memory fallback if MySQL is unavailable, but changes in that fallback session do not persist.”
 
-For check-in, the booking row’s checked-in state is saved. For a gate change or delay, the flight’s gate, status, estimated time, and reason are saved. The transaction keeps a save together, so a partial write is rolled back if it fails.
+> “The tables are connected by their relationships. Airlines and destinations are stored once and referenced by flights. A booking connects one passenger to one flight and stores the seat, boarding group, and check-in state. Foreign keys keep those links valid, and the database prevents the same seat being booked twice on one flight.”
 
-**What to show:** if MySQL Workbench is already open, point to the BK7F3A booking row and its checked-in value, or the flight row after a staff change. No SQL query is needed. If the database view is not ready, use the app confirmation and trace the save through the diagram.
+Point out the app_state node in the database design if asked: it records when the last snapshot was saved, so the app can advance flight times after a restart.
 
-When the app opens again, it reads the saved records. It uses the saved timestamp to advance scheduled and estimated times, keeping the board’s times current. Flight and booking data persist; the staff undo history and audit log are session-only.
+### 4. Trace one update through the bottom of the diagram
 
-If MySQL is unavailable, the app can fall back to sample data held in memory. That keeps the demo usable, but changes in that session will not persist.
+Use the check-in that Njeri just demonstrated, or a staff gate change.
 
-**Testing note:** the project has 65 JUnit tests for core rules, service behavior, edge cases, notifications, and the JSON data source. There is no dedicated live-MySQL integration test, so demonstrate persistence through a saved row or by reopening the app.
+> “When the passenger checks in, the screen sends that request through the controller to FlightService. The service checks that check-in is still open, then updates the booking. MySqlDataSource saves the updated snapshot in a database transaction. When the save is complete, the controller refreshes the screen. If the database write fails partway through, the transaction rolls back rather than leaving a partial snapshot.”
 
-## Short talk track
+> “For this check-in, the booking’s checked-in value is saved. For a gate change or delay, the flight’s gate, status, estimated time, and reason are saved.”
 
-> “The app separates storage behind FlightDataSource. When staff changes a flight or a passenger checks in, FlightService validates the request and MySqlDataSource saves the updated records to MySQL. On restart, the app loads those flights and bookings again. If the flights table starts empty, it imports the old data file or uses the bundled sample data. The schema file prepares the tables, and the app initializes the records.”
+If MySQL Workbench is already open, point to the BK7F3A booking row and its checked-in value, or to the flight row after a staff update. No query is needed.
 
-**Close:** “That is how passenger and staff changes reach the database and survive a restart. We are happy to take questions.”
+### 5. Close with restart and test evidence
+
+> “On the next launch, the app reads the saved records from MySQL. It uses the saved timestamp to keep scheduled and estimated times moving forward. Flight and booking changes persist; the staff undo history and audit log are for the current session.”
+
+> “We have 65 JUnit tests covering core rules, service behavior, edge cases, notifications, and the JSON data source. The live MySQL connection is best demonstrated by showing the saved row; it does not have a dedicated integration test in this suite.”
+
+**If the database is unavailable:** the app can still open with sample data in memory, but do not describe that session as persistent.
