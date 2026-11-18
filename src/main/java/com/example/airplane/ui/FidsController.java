@@ -111,17 +111,25 @@ public class FidsController implements FlightListener {
         state.onChange(() -> { if (suspended == 0) refresh(); });
     }
 
-    /** MySQL is the normal store; use sample memory data if MySQL is not ready for the demo. */
+    /** MySQL is the normal store; an explicit demo flag selects bundled in-memory data. */
     private static FlightService createService() {
+        if (Boolean.parseBoolean(System.getenv("SKYSCOPE_USE_MEMORY"))) {
+            System.out.println("Using in-memory sample data (SKYSCOPE_USE_MEMORY=true)");
+            return createMemoryService();
+        }
         try {
             return new FlightService(MySqlDataSource.fromEnvironment());
         } catch (IOException | RuntimeException e) { // exception handling: catch either error type
             System.err.println("MySQL unavailable; using in-memory sample data (" + e.getMessage() + ")");
-            try {
-                return new FlightService(new FlightRepository());
-            } catch (IOException ex) {
-                throw new IllegalStateException(ex);
-            }
+            return createMemoryService();
+        }
+    }
+
+    private static FlightService createMemoryService() {
+        try {
+            return new FlightService(new FlightRepository());
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
         }
     }
 

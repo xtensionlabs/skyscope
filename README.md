@@ -20,11 +20,20 @@ uses the existing demo set from `src/main/resources/data/seed.json`.
 
 - **Git**, to download the project (<https://git-scm.com/downloads>). Check with `git --version`.
 - **JDK 17 or newer** (developed on JDK 26). Check with `java -version`.
-- **MySQL 8.0 or newer**, running locally or reachable through the configured JDBC URL.
+- **MySQL 8.0 or newer** (optional; needed only when you want the app to save data in MySQL).
 - Nothing else to install: Maven comes with the project (`mvnw` / `mvnw.cmd`).
 - An internet connection is needed the first time, so Maven can download its libraries (including MySQL Connector/J).
 
 **Steps**
+
+**Quick demo with the bundled flights (no MySQL setup):** From the project folder, run these commands in PowerShell:
+```powershell
+$env:SKYSCOPE_USE_MEMORY = 'true'
+.\mvnw.cmd javafx:run
+```
+This loads the bundled `seed.json` data into memory. Staff changes work during the session and reset when the app
+closes. To return to MySQL mode in the same PowerShell window, run
+`Remove-Item Env:SKYSCOPE_USE_MEMORY -ErrorAction SilentlyContinue` before starting the app.
 
 1. Download the project. Open a terminal (PowerShell on Windows), go to the folder where you want it, and clone it
    (you need access to the repository):
@@ -37,8 +46,8 @@ uses the existing demo set from `src/main/resources/data/seed.json`.
    cd skyscope
    ```
    Use `dir` (Windows) or `ls` to check that you can see `pom.xml`. All the commands below are run from here.
-3. Create the database tables by opening `database/schema.sql` in MySQL Workbench and running it, or run it from the
-   MySQL command line:
+3. For MySQL mode, create the database tables by opening `database/schema.sql` in MySQL Workbench and running it,
+   or run it from the MySQL command line:
    ```
    Get-Content -Raw database/schema.sql | mysql -u root -p
    ```
