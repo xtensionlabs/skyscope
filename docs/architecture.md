@@ -26,7 +26,19 @@ Open **src/main/java/com/example/airplane/model/Aircraft.java**. Keep the editor
 
 > “Notice that the factory returns the general Aircraft type even though it creates different specific types. The rest of the program can work with an Aircraft without needing to know which subtype it has. When it asks for category or cabinCrew, Java uses the implementation from the actual subtype. The same method call can produce the right answer for each type; that is polymorphism.”
 
-**Point out:** Aircraft.of returns Aircraft, while the switch creates NarrowBody, RegionalJet, and WideBody objects. Their extends declarations and method implementations are in the subtype files, so you can keep this walkthrough on Aircraft.java.
+**Live app cue (during this explanation):** Switch briefly to the running app's **Board View**. Open the detail drawer
+for **EK720** (B777-300ER), then **TK606** (A320), and point to each flight's **AIRCRAFT** detail.
+
+**Say as you show the details:**
+
+> “Here we can see the aircraft information in the app. The details view asks the flight's aircraft for a description.
+> Both types use the shared `describe()` method, but `category()` comes from the specific aircraft type. That's why
+> the name, category, and seat count shown here match the selected aircraft. This is polymorphism in action.”
+
+**Point out:** The board calls `f.aircraft().describe()`. `Aircraft.describe()` calls `category()`, and Java uses the
+implementation from the actual subtype. Return to `Aircraft.java` and point out that `Aircraft.of` returns the shared
+`Aircraft` type while its switch creates `NarrowBody`, `RegionalJet`, and `WideBody` objects. Their `extends`
+declarations and method implementations are in the subtype files.
 
 ## Close
 
